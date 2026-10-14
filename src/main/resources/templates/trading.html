@@ -1,0 +1,712 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}">
+
+  <head>
+    <title>모의투자 | STOCK LAB</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}" />
+    <style>
+      .up {
+        color: #ef4444 !important;
+      }
+
+      .down {
+        color: #3b82f6 !important;
+      }
+
+      .board-page {
+        padding: 0;
+        max-width: 100%;
+      }
+
+      .top-header {
+        padding: 1.25rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .top-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 800;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .market-tab {
+        display: flex;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-base);
+      }
+
+      .market-btn {
+        flex: 1;
+        text-align: center;
+        padding: 0.75rem 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+
+      .market-btn.active {
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--text-primary);
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1rem;
+      }
+
+      .t-card {
+        background: var(--bg-surface);
+        border: none;
+        border-top: 8px solid var(--bg-surface-2);
+        border-radius: 0;
+      }
+
+      .mts-asset-card {
+        padding: 1.5rem;
+        border-radius: 1rem;
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      }
+
+      .mts-asset-card .label {
+        font-size: 11px;
+        color: #94a3b8;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .mts-asset-card .total-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
+        word-break: break-all;
+      }
+
+      .mts-asset-card .rate {
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 1rem;
+      }
+
+      .mts-asset-grid {
+        display: flex;
+        justify-content: space-between;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 1rem;
+        gap: 0.5rem;
+      }
+
+      .mts-asset-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .mts-asset-item .sub-label {
+        font-size: 11px;
+        color: #64748b;
+        margin-bottom: 0.2rem;
+      }
+
+      .mts-asset-item .sub-value {
+        font-size: 13px;
+        font-weight: 600;
+        color: #e2e8f0;
+      }
+
+      .search-area {
+        padding: 1.25rem 1rem;
+        position: relative;
+      }
+
+      .search-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+
+      .search-input {
+        width: 100%;
+        height: 48px;
+        padding: 0 3rem 0 1.25rem;
+        border-radius: 1rem;
+        border: 1px solid var(--border-base);
+        background: var(--bg-surface-2);
+        color: var(--text-primary);
+        font-size: 14px;
+        outline: none;
+        transition: all 0.2s;
+      }
+
+      .search-input:focus {
+        border-color: var(--accent);
+        background: var(--bg-surface);
+        box-shadow: 0 0 0 3px var(--accent-light);
+      }
+
+      .search-icon-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        padding: 0.5rem;
+        cursor: pointer;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .search-icon-btn:hover {
+        color: var(--accent);
+        background: var(--bg-muted);
+      }
+
+      /* 자동완성 드롭다운 디자인 */
+      .suggestion-dropdown {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        width: 100%;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-base);
+        border-radius: 0.75rem;
+        max-height: 250px;
+        overflow-y: auto;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 50;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .suggestion-dropdown::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .suggestion-dropdown::-webkit-scrollbar-thumb {
+        background-color: var(--border-base);
+        border-radius: 4px;
+      }
+
+      .suggestion-item {
+        padding: 0.3rem 1.25rem;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--bg-surface-2);
+        transition: background 0.15s;
+      }
+
+      .suggestion-item:last-child {
+        border-bottom: none;
+      }
+
+      .suggestion-item:hover {
+        background: var(--bg-muted);
+      }
+
+      .sugg-symbol {
+        font-weight: 800;
+        color: var(--text-primary);
+        font-size: 14px;
+      }
+
+      .sugg-name {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      .mts-list-header {
+        padding: 1rem 1rem 0.5rem 1rem;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-primary);
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .h-row,
+      .p-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem;
+        border-bottom: 1px solid var(--bg-surface-2);
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+
+      .h-row:active {
+        background: var(--bg-muted);
+      }
+
+      .h-row:last-child,
+      .p-row:last-child {
+        border-bottom: none;
+      }
+
+      .row-left {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        flex: 1;
+        min-width: 0;
+        padding-right: 0.5rem;
+      }
+
+      .row-left .name {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .row-left .sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .row-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.2rem;
+        flex-shrink: 0;
+      }
+
+      .row-right .rate {
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .row-right .val {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
+
+      .p-cancel-btn {
+        padding: 0.35rem 0.6rem;
+        font-size: 11.5px;
+        border-radius: 0.5rem;
+        white-space: nowrap;
+      }
+
+      .flash {
+        margin: 1rem;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .flash-ok {
+        background: rgba(34, 197, 94, 0.1);
+        color: #16a34a;
+      }
+
+      .flash-err {
+        background: var(--danger-light);
+        color: var(--danger);
+      }
+
+      /* PC 환경 대응 */
+      @media(min-width: 1024px) {
+        .board-page {
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 2rem 1rem;
+        }
+
+        .pc-header-wrap {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-bottom: 2rem;
+        }
+
+        .top-header {
+          padding: 0;
+        }
+
+        .top-header h2 {
+          font-size: 1.5rem;
+        }
+
+        .market-tab {
+          border-bottom: none;
+          background: transparent;
+          gap: 0.5rem;
+          margin-bottom: 0;
+        }
+
+        .market-btn {
+          padding: 0.6rem 1.5rem;
+          border-radius: 2rem;
+          background: var(--bg-surface-2);
+          border: 1px solid var(--border-base);
+        }
+
+        .market-btn.active {
+          background: var(--text-primary);
+          color: var(--bg-surface);
+          border-color: var(--text-primary);
+        }
+
+        .dashboard-grid {
+          grid-template-columns: 2fr 1fr;
+          gap: 1.5rem;
+          padding: 0;
+          align-items: start;
+        }
+
+        .item-asset {
+          grid-column: 1 / 2;
+          grid-row: 1 / 2;
+        }
+
+        .item-holdings {
+          grid-column: 1 / 2;
+          grid-row: 2 / 4;
+        }
+
+        .item-search {
+          grid-column: 2 / 3;
+          grid-row: 1 / 2;
+          position: sticky;
+          top: 1.5rem;
+          z-index: 10;
+        }
+
+        .item-pending {
+          grid-column: 2 / 3;
+          grid-row: 2 / 3;
+        }
+
+        .t-card {
+          border: 1px solid var(--border-base);
+          border-radius: 1rem;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .mts-list-header {
+          padding: 1.25rem 1.5rem;
+          font-size: 15px;
+          border-bottom: 1px solid var(--border-base);
+        }
+
+        .h-row,
+        .p-row {
+          flex-direction: row;
+          padding: 1.25rem 1.5rem;
+        }
+
+        .row-left {
+          flex-direction: row;
+          align-items: baseline;
+          gap: 1rem;
+        }
+
+        .row-left .name {
+          font-size: 15px;
+        }
+
+        .row-left .sub {
+          font-size: 13px;
+        }
+
+        .row-right {
+          flex-direction: row;
+          align-items: baseline;
+          gap: 2rem;
+        }
+
+        .row-right .rate {
+          font-size: 15px;
+        }
+
+        .row-right .val {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+
+  <div layout:fragment="content">
+    <span layout:fragment="page-title" style="display:none;">Trading</span>
+
+    <div class="board-page">
+      <div th:if="${successMsg}" class="flash flash-ok" th:text="${successMsg}"></div>
+      <div th:if="${errorMsg}" class="flash flash-err" th:text="${errorMsg}"></div>
+
+      <div class="pc-header-wrap">
+        <div class="top-header">
+          <h2>모의투자</h2>
+          <div class="header-actions">
+            <a th:href="@{/trading/history(market=${market})}" class="btn btn-ghost"
+              style="padding:0.4rem 0.8rem; font-size:12px;">거래내역</a>
+            <a href="/trading/ranking" class="btn btn-ghost" style="padding:0.4rem 0.8rem; font-size:12px;">🏆 랭킹</a>
+          </div>
+        </div>
+        <div class="market-tab">
+          <a th:href="@{/trading(market='US')}" class="market-btn" th:classappend="${market=='US'} ? ' active'">🇺🇸
+            미국</a>
+          <a th:href="@{/trading(market='KR')}" class="market-btn" th:classappend="${market=='KR'} ? ' active'">🇰🇷
+            한국</a>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="mts-asset-card item-asset">
+          <div class="label" th:text="${market=='US' ? '내 미국주식 자산' : '내 한국주식 자산'}">내 자산</div>
+          <div class="total-value"
+            th:text="${account.currencySymbol} + ${#numbers.formatDecimal(totalAsset,1,'COMMA',2,'POINT')}">$0</div>
+          <div class="rate" th:with="rate=${account.getProfitRate(totalAsset)}"
+            th:classappend="${rate > 0} ? 'up' : (${rate < 0} ? 'down' : '')"
+            th:text="${rate > 0 ? '+' : ''} + ${#numbers.formatDecimal(rate,1,'COMMA',2,'POINT')} + '%'">0%</div>
+          <div class="mts-asset-grid">
+            <div class="mts-asset-item">
+              <div class="sub-label">주문가능 현금</div>
+              <div class="sub-value"
+                th:text="${account.currencySymbol} + ${#numbers.formatDecimal(account.cash,1,'COMMA',2,'POINT')}">0
+              </div>
+            </div>
+            <div class="mts-asset-item">
+              <div class="sub-label">투자 원금</div>
+              <div class="sub-value"
+                th:text="${account.currencySymbol} + ${#numbers.formatDecimal(account.initialSeed,1,'COMMA',2,'POINT')}">
+                0</div>
+            </div>
+            <div class="mts-asset-item" th:if="${market=='US'}">
+              <div class="sub-label">환산 금액 (KRW)</div>
+              <div class="sub-value"
+                th:text="'₩' + ${#numbers.formatDecimal(totalAsset.multiply(usdToKrw),1,'COMMA',0,'POINT')}">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="t-card item-search">
+          <div class="search-area">
+            <div class="search-input-wrapper" style="width: 100%;">
+              <input type="text" id="trading-symbol-input" class="search-input"
+                th:placeholder="${market=='US'} ? '종목명 또는 티커 (예: AAPL)' : '종목명 또는 코드 (예: 삼성전자)'" autocomplete="off" />
+              <button onclick="lookupTradingStock()" class="search-icon-btn">
+                <svg class="w-5 h-5" style="width:20px;height:20px;" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </button>
+
+              <ul id="trading-suggestion-list" class="suggestion-dropdown" style="display:none;"></ul>
+            </div>
+          </div>
+
+          <div id="trading-stock-result" style="display:none;">
+            <div class="h-row" style="background:var(--bg-surface-2); border-top:1px solid var(--border-base);">
+              <div class="row-left">
+                <div id="trading-resName" class="name"></div>
+                <div id="trading-resSymbol" class="sub"></div>
+              </div>
+              <div class="row-right" style="align-items:flex-end; gap: 0.5rem;">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                  <span id="trading-resPrice" style="font-size:16px; font-weight:800;"></span>
+                  <span id="trading-resChange" class="rate"></span>
+                </div>
+                <a id="trading-orderLink" href="#" class="btn btn-primary"
+                  style="padding:0.4rem 1rem; font-size:13px; border-radius:0.5rem;">주문하기</a>
+              </div>
+            </div>
+          </div>
+          <div id="trading-stock-error"
+            style="display:none; color:var(--danger); font-size:13px; padding: 0 1rem 1rem 1rem;"></div>
+        </div>
+
+        <div class="t-card item-holdings">
+          <div class="mts-list-header"><span>보유 주식</span><span style="color:var(--text-muted); font-weight:600;"
+              th:text="${#lists.size(holdings)} + '개'">0개</span></div>
+          <div th:each="h : ${holdings}" class="h-row" th:data-symbol="${h?.symbol}" th:data-market="${market}"
+            onclick="location.href='/trading/order?symbol=' + this.getAttribute('data-symbol') + '&market=' + this.getAttribute('data-market')">
+            <div class="row-left" th:with="cp=${prices?.get(h?.symbol) ?: 0}">
+              <div class="name" th:text="${h?.companyName ?: h?.symbol}">종목명</div>
+              <div class="sub"
+                th:text="${h?.quantity} + '주 · 평단 ' + ${#numbers.formatDecimal(h?.avgBuyPrice ?: 0,1,'COMMA',2,'POINT')} + ' · 현재 ' + ${account.currencySymbol} + ${#numbers.formatDecimal(cp,1,'COMMA',2,'POINT')}">
+                0주</div>
+            </div>
+            <div class="row-right">
+              <div class="rate" th:with="cp=${prices?.get(h?.symbol) ?: 0}, rate=${h?.getUnrealizedPnlRate(cp) ?: 0}"
+                th:classappend="${rate > 0} ? 'up' : (${rate < 0} ? 'down' : '')"
+                th:text="${rate > 0 ? '+' : ''} + ${#numbers.formatDecimal(rate,1,'COMMA',2,'POINT')} + '%'">0%</div>
+              <div class="val" th:with="cp=${prices?.get(h?.symbol) ?: 0}"
+                th:text="${account.currencySymbol} + ${#numbers.formatDecimal(h?.getValuation(cp) ?: 0,1,'COMMA',2,'POINT')}">
+                $0</div>
+            </div>
+          </div>
+          <div th:if="${#lists.isEmpty(holdings)}"
+            style="padding:4rem 1rem; text-align:center; color:var(--text-muted);"><span
+              style="font-size:3rem; display:block; margin-bottom:1rem; opacity:0.5;">📭</span>
+            <div style="font-size:15px; font-weight:600;">아직 보유한 주식이 없어요.</div>
+          </div>
+        </div>
+
+        <div class="t-card item-pending" th:if="${!#lists.isEmpty(pendingOrders)}">
+          <div class="mts-list-header"><span>대기중인 주문</span></div>
+          <div th:each="o : ${pendingOrders}" class="p-row">
+            <div class="row-left">
+              <div style="display:flex; align-items:center; gap:0.4rem;"><span th:if="${o.tradeType.name()=='BUY'}"
+                  class="up" style="font-size:12px; font-weight:800;">매수</span><span
+                  th:if="${o.tradeType.name()=='SELL'}" class="down"
+                  style="font-size:12px; font-weight:800;">매도</span><span class="name"
+                  th:text="${o.companyName ?: o.symbol}">종목명</span></div>
+              <div class="sub"
+                th:text="${o.quantity} + '주 · ' + ${account.currencySymbol} + ${#numbers.formatDecimal(o.targetPrice,1,'COMMA',2,'POINT')}">
+                주문상세</div>
+            </div>
+            <div class="row-right">
+              <form th:action="@{/trading/order/{id}/cancel(id=${o.id})}" method="post"><input type="hidden"
+                  name="market" th:value="${market}" /><button type="submit" class="btn btn-ghost p-cancel-btn">주문
+                  취소</button></form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <th:block layout:fragment="script">
+      <script th:inline="javascript">
+        // IIFE(즉시 실행 함수)로 감싸서 변수들이 전역(Global)으로 새어나가 푸터와 충돌하는 것을 원천 차단합니다.
+        (() => {
+          const TRADING_MARKET = /*[[${market}]]*/ 'US';
+          const tInput = document.getElementById('trading-symbol-input');
+          const tSuggestions = document.getElementById('trading-suggestion-list');
+          let tDebounceTimer;
+
+          if (!tInput || !tSuggestions) return;
+
+          // 1. 자동완성 이벤트
+          tInput.addEventListener('input', function () {
+            const keyword = this.value.trim();
+            if (!keyword) {
+              tSuggestions.style.display = 'none';
+              return;
+            }
+
+            clearTimeout(tDebounceTimer);
+            tDebounceTimer = setTimeout(async () => {
+              try {
+                const response = await fetch(`/trading/search?q=${encodeURIComponent(keyword)}&market=${TRADING_MARKET}`);
+                if (!response.ok) throw new Error('검색 실패');
+                const data = await response.json();
+                renderTradingSuggestions(data);
+              } catch (error) {
+                console.error('Trading Autocomplete Error:', error);
+              }
+            }, 300);
+          });
+
+          function renderTradingSuggestions(items) {
+            tSuggestions.innerHTML = '';
+            if (!items || items.length === 0) {
+              tSuggestions.style.display = 'none';
+              return;
+            }
+
+            items.forEach(item => {
+              const li = document.createElement('li');
+              li.className = 'suggestion-item';
+              li.innerHTML = `
+                <span class="sugg-symbol">${item.symbol}</span>
+                <span class="sugg-name">${item.name}</span>
+              `;
+
+              li.addEventListener('click', () => {
+                tInput.value = item.symbol;
+                tSuggestions.style.display = 'none';
+                window.lookupTradingStock(); // 전역 함수 호출
+              });
+
+              tSuggestions.appendChild(li);
+            });
+            tSuggestions.style.display = 'block';
+          }
+
+          document.addEventListener('click', function (e) {
+            if (!tInput.contains(e.target) && !tSuggestions.contains(e.target)) {
+              tSuggestions.style.display = 'none';
+            }
+          });
+
+          tInput.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              tSuggestions.style.display = 'none';
+              window.lookupTradingStock();
+            }
+          });
+
+          // 2. 종목 시세 조회 함수 (HTML의 onclick에서 호출할 수 있게 window 객체에 등록)
+          window.lookupTradingStock = async function () {
+            const symbol = tInput.value.trim().toUpperCase();
+            if (!symbol) return;
+
+            const resultEl = document.getElementById('trading-stock-result');
+            const errEl = document.getElementById('trading-stock-error');
+            resultEl.style.display = 'none';
+            errEl.style.display = 'none';
+
+            try {
+              const res = await fetch(`/trading/price?symbol=${encodeURIComponent(symbol)}&market=${TRADING_MARKET}`);
+              const data = await res.json();
+
+              if (!res.ok || data.error) {
+                errEl.textContent = data.error || '종목을 찾을 수 없습니다.';
+                errEl.style.display = 'block';
+                return;
+              }
+
+              document.getElementById('trading-resName').textContent = data.name;
+              document.getElementById('trading-resSymbol').textContent = data.symbol;
+              document.getElementById('trading-resPrice').textContent =
+                data.currencySymbol + Number(data.price).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+
+              const pct = Number(data.changePercent).toFixed(2);
+              const changeEl = document.getElementById('trading-resChange');
+              changeEl.textContent = (pct > 0 ? '+' : '') + pct + '%';
+              changeEl.className = 'rate ' + (pct > 0 ? 'up' : (pct < 0 ? 'down' : ''));
+
+              document.getElementById('trading-orderLink').href = `/trading/order?symbol=${data.symbol}&market=${TRADING_MARKET}`;
+              resultEl.style.display = 'block';
+            } catch (e) {
+              errEl.textContent = '네트워크 오류가 발생했습니다.';
+              errEl.style.display = 'block';
+            }
+          };
+        })();
+      </script>
+    </th:block>
+  </div>
+</div>

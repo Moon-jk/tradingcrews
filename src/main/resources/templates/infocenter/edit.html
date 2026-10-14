@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+<head>
+    <title th:text="${cardNews.topic + ' 수정 | 정보센터 | TradingCrews:트루'}">정보센터 수정</title>
+    <style>
+        .ic-edit-wrap {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        /* ── 브레드크럼 ── */
+        .ic-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .ic-breadcrumb a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+
+        .ic-breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        /* ── 페이지 타이틀 ── */
+        .ic-edit-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.4rem;
+        }
+
+        .ic-edit-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        /* ── 폼 카드 ── */
+        .ic-edit-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-base);
+            border-radius: 1rem;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .ic-field-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .ic-field-input {
+            width: 100%;
+            background: var(--bg-base);
+            border: 1px solid var(--border-base);
+            color: var(--text-primary);
+            padding: 0.75rem 1rem;
+            border-radius: 0.6rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            outline: none;
+            transition: border-color 0.2s;
+            box-sizing: border-box;
+        }
+
+        .ic-field-input:focus {
+            border-color: #60a5fa;
+        }
+
+        /* 읽기 전용 페이지 목록 */
+        .ic-pages-block {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .ic-page-item {
+            background: var(--bg-base);
+            border: 1px solid var(--border-base);
+            border-radius: 0.6rem;
+            padding: 0.75rem 1rem;
+        }
+
+        .ic-page-num {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #60a5fa;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.3rem;
+        }
+
+        .ic-page-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .ic-page-content {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* ── 버튼 행 ── */
+        .ic-btn-row {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+
+        .ic-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0.6rem 1.25rem;
+            border-radius: 100px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid var(--border-base);
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+
+        .ic-btn:hover {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.08);
+        }
+
+        .ic-btn-primary {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+        }
+
+        .ic-btn-primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+        /* 권한 뱃지 */
+        .ic-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 100px;
+            margin-bottom: 1.5rem;
+            background: rgba(245, 158, 11, 0.12);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+    </style>
+</head>
+
+<span layout:fragment="page-title">정보센터 수정</span>
+
+<div layout:fragment="content">
+    <div class="ic-edit-wrap">
+
+        <!-- 브레드크럼 -->
+        <div class="ic-breadcrumb">
+            <a href="/infocenter">📊 정보센터</a>
+            <span>›</span>
+            <a th:href="@{|/infocenter/${cardNews.id}|}" th:text="${cardNews.topic}">리포트</a>
+            <span>›</span>
+            <span>수정</span>
+        </div>
+
+        <!-- 권한 안내 뱃지 -->
+        <div class="ic-badge">
+            ✏️ 관리자 / 1등급 전용 수정 페이지
+        </div>
+
+        <div class="ic-edit-title">리포트 수정</div>
+        <p class="ic-edit-sub">주제(제목)를 수정할 수 있습니다. 각 페이지의 상세 내용은 참조용으로 표시됩니다.</p>
+
+        <form th:action="@{|/infocenter/${cardNews.id}/edit|}" method="post">
+            <div class="ic-edit-card">
+
+                <!-- 제목 수정 필드 -->
+                <div>
+                    <div class="ic-field-label">주제 (제목)</div>
+                    <input type="text" name="topic" class="ic-field-input" th:value="${cardNews.topic}" required
+                        maxlength="100" placeholder="리포트 주제를 입력하세요">
+                </div>
+
+                <!-- 카드 페이지 목록 (참조용, 읽기 전용) -->
+                <div>
+                    <div class="ic-field-label">카드 페이지 구성 (참조용)</div>
+                    <div class="ic-pages-block">
+                        <div class="ic-page-item" th:each="pg : ${cardNews.pages}">
+                            <div class="ic-page-num" th:text="'PAGE ' + ${pg.pageNum}">PAGE 1</div>
+                            <div class="ic-page-title" th:text="${pg.title}">제목</div>
+                            <div class="ic-page-content" th:text="${pg.content}">내용</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 버튼 행 -->
+                <div class="ic-btn-row">
+                    <a th:href="@{|/infocenter/${cardNews.id}|}" class="ic-btn">취소</a>
+                    <button type="submit" class="ic-btn ic-btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                        저장
+                    </button>
+                </div>
+
+            </div>
+        </form>
+
+    </div>
+</div>
+
+</html>

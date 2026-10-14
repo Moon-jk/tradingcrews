@@ -1,0 +1,332 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+    <head>
+        <title th:text="|차트 분석 - ${selectedSymbol}|">차트 검색</title>
+        <style>
+            /* 1. 상단 레이아웃 설정 */
+            .top-content-area {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            @media (min-width: 1024px) {
+                .top-content-area {
+                    flex-direction: row;
+                    height: 400px;
+                }
+
+                .chart-section {
+                    flex: 8;
+                    height: 100%;
+                    order: 1;
+                }
+
+                .memo-section {
+                    flex: 2;
+                    height: 100%;
+                    order: 2;
+                }
+            }
+
+            @media (max-width: 1023px) {
+                .analysis-wrapper {
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .chart-section {
+                    height: 30vh;
+                    width: 100%;
+                    order: 1;
+                }
+
+                .memo-section {
+                    height: 450px;
+                    width: 100%;
+                    order: 2;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .chat-section {
+                    order: 3;
+                    margin-top: 1.5rem;
+                }
+            }
+
+            .glass-card {
+                background: rgba(15, 23, 42, 0.5);
+                border: 1px solid rgba(30, 41, 59, 1);
+                border-radius: 1.5rem;
+                padding: 0.5rem;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            }
+
+            .no-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+
+            .no-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .scroll-area {
+                flex: 1;
+                overflow-y: auto;
+            }
+
+            .break-words {
+                word-break: break-all;
+                overflow-wrap: break-word;
+            }
+
+            .memo-item:hover .delete-memo-btn {
+                opacity: 1;
+            }
+        </style>
+    </head>
+
+    <span layout:fragment="page-title">Market Analysis</span>
+
+    <div layout:fragment="content" class="p-4 lg:p-8">
+        <div class="max-w-[1600px] mx-auto space-y-6">
+            <div th:unless="${member != null}" class="glass-card text-center py-10 opacity-60">
+                <p class="text-slate-500 text-sm">로그인하시면 개인 메모와 토론 참여가 가능합니다. 🔒</p>
+                <a href="/login" class="text-blue-500 text-xs mt-2 inline-block hover:underline">로그인 하러가기</a>
+            </div>
+            
+            <div class="top-content-area">
+                <div class="chart-section bg-slate-900 rounded-2xl lg:rounded-3xl border border-slate-800 overflow-hidden shadow-2xl relative">
+                    <div id="tradingview_chart" class="h-full w-full"></div>
+                </div>
+
+                <div th:if="${member != null}" class="memo-section glass-card flex flex-col overflow-hidden">
+                    <div class="flex items-center gap-2 mb-2 px-1">
+                        <span class="text-blue-500 text-xl">📌</span>
+                        <h3 class="text-slate-100 font-bold text-base">투자 로그</h3>
+                    </div>
+
+                    <div class="mb-2">
+                        <textarea id="memo-log-input"
+                            class="w-full bg-slate-950 border border-blue-500/20 rounded-2xl p-2 text-xs text-slate-300 outline-none focus:ring-1 focus:ring-blue-500/50 transition-all resize-none shadow-inner leading-relaxed"
+                            rows="3" th:placeholder="|${selectedSymbol} 새로운 분석 기록...|"></textarea>
+                        <button onclick="saveMemoLog()"
+                            class="w-full bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-bold py-2 rounded-xl transition-all shadow-lg">
+                            기록 남기기
+                        </button>
+                    </div>
+
+                    <div class="flex-1 scroll-area no-scrollbar space-y-2 pr-1">
+                        <div th:each="log : ${memoLogs}"
+                            class="memo-item bg-slate-800/30 border border-slate-800 p-2 rounded-2xl group relative transition-colors hover:bg-slate-800/50">
+                            <div class="flex justify-between items-start mb-1">
+                                <span class="text-[9px] text-blue-400 font-black tracking-tighter"
+                                    th:text="${#temporals.format(log.createdAt, 'yyyy.MM.dd HH:mm')}">Date</span>
+                                <button type="button" th:onclick="|deleteMemoLog(${log.id})|"
+                                    class="delete-memo-btn opacity-0 group-hover:opacity-100 transition-opacity text-slate-500 hover:text-red-500 p-1 -mt-1 -mr-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="text-[12px] text-slate-300 leading-relaxed whitespace-pre-wrap break-words"
+                                th:text="${log.content}">Content</p>
+                        </div>
+                        <div th:if="${#lists.isEmpty(memoLogs)}" class="text-center py-10">
+                            <p class="text-slate-600 text-[11px] italic">기록된 분석이 없습니다. ✨</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+<div class="flex flex-col lg:flex-row gap-6 w-full">
+    <div class="glass-card w-full lg:flex-[3] flex flex-col overflow-hidden min-w-0 h-[400px]">
+        <div class="flex items-center justify-between mb-4 px-1 shrink-0">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">🤖</span>
+                <h3 class="text-slate-100 font-bold text-base">
+                    <span class="text-emerald-500" th:text="${selectedSymbol}">AAPL</span> AI 핵심 요약
+                </h3>
+            </div>
+            <span class="text-[9px] bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700">LAB 분석</span>
+        </div>
+
+        <div class="flex-1 scroll-area no-scrollbar space-y-3 pr-1 overflow-y-auto">
+            <div th:each="news : ${newsList}" th:data-url="${news.url}"
+                onclick="window.open(this.getAttribute('data-url'), '_blank')"
+                class="p-4 rounded-xl bg-slate-800/30 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-800/50 transition-all cursor-pointer group">
+
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-[10px] text-emerald-400 font-bold uppercase tracking-tighter"
+                        th:text="${news.source != null ? news.source : 'Market'}">Source</span>
+                    <span th:if="${news.pubDate.isAfter(#temporals.createNow().minusHours(12))}"
+                        class="text-[8px] bg-emerald-500/20 text-emerald-400 px-1 rounded animate-pulse">NEW</span>
+                </div>
+
+                <p class="text-slate-100 text-[13px] font-semibold leading-relaxed mb-2 line-clamp-2 group-hover:text-emerald-200"
+                    th:text="${news.summary}">요약 내용</p>
+
+                <div class="flex items-center justify-between mt-auto pt-2 border-t border-slate-700/30">
+                    <span class="text-[9px] text-slate-600"
+                        th:text="${#temporals.format(news.pubDate, 'MM.dd HH:mm')}">Date</span>
+                    <span class="text-[10px] text-slate-500 group-hover:text-emerald-400 transition-colors">자세히 보기 →</span>
+                </div>
+            </div>
+
+            <div th:if="${#lists.isEmpty(newsList)}"
+                class="flex flex-col items-center justify-center h-full py-10 opacity-40">
+                <p class="text-2xl mb-2">🔭</p>
+                <p class="text-slate-500 text-[11px] text-center">
+                    <span class="text-emerald-500" th:text="${selectedSymbol}">AAPL</span> 관련 뉴스가 없습니다.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card w-full lg:flex-[7] flex flex-col min-w-0 h-[400px]">
+        <div class="flex justify-between items-center mb-4 shrink-0 px-1">
+            <h3 class="text-slate-100 font-bold flex items-center gap-2 text-sm">
+                <span class="text-emerald-500 text-lg">💬</span> 실시간 토론
+            </h3>
+            <span class="text-[10px] text-emerald-400 animate-pulse font-bold tracking-widest">● LIVE</span>
+        </div>
+
+        <div id="chat-window"
+            class="chat-window scroll-area no-scrollbar flex flex-col gap-4 mb-4 pr-2 overflow-y-auto">
+            <div class="text-center text-slate-500 text-xs py-10">로딩 중... 📡</div>
+        </div>
+
+        <div class="relative shrink-0">
+            <input type="text" id="chat-input" placeholder="의견을 나누세요..."
+                class="w-full bg-slate-950 border border-slate-800 rounded-2xl py-3 px-6 text-sm text-slate-300 outline-none focus:ring-1 focus:ring-blue-500 shadow-inner pr-14">
+            <button onclick="sendDiscussion()"
+                class="absolute right-4 top-2.5 text-blue-500 hover:scale-110 transition-transform p-1">🚀</button>
+        </div>
+    </div>
+</div>
+        </div>
+        <p class="text-center text-[10px] text-slate-700 mt-10 pb-6">© 2026 TradingCrews:트루 Cloud Service.</p>
+    </div>
+
+    <th:block layout:fragment="script">
+        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+        <script th:inline="javascript">
+            // 스크립트 로직 (기존과 동일하므로 생략하거나 그대로 유지)
+            const currentSymbol = /*[[${selectedSymbol}]]*/ 'AAPL';
+
+            new TradingView.widget({
+                "autosize": true, "symbol": currentSymbol, "interval": "5", "timezone": "Asia/Seoul",
+                "theme": "dark", "style": "1", "locale": "kr", "container_id": "tradingview_chart",
+                "withdateranges": true, "hide_top_toolbar": true, "hide_side_toolbar": true,
+                "allow_symbol_change": false, "save_image": false, "show_popup_button": false,
+                "enable_publishing": false, "details": false, "hotlist": false, "calendar": false,
+                "stocktwits": true, "headlines": false, "hide_legend": false, "hide_volume": false,
+                "disabled_features": ["header_widget_dom_node", "use_localstorage_for_settings_save"],
+                "enabled_features": ["study_templates"],
+                "overrides": {
+                    "mainSeriesProperties.style": 1, "paneProperties.background": "#0f172a",
+                    "paneProperties.vertGridProperties.color": "rgba(42, 46, 57, 0)",
+                    "paneProperties.horzGridProperties.color": "rgba(42, 46, 57, 0)",
+                    "scalesProperties.fontSize": 12, "mainSeriesProperties.candleStyle.upColor": "#22c55e",
+                    "mainSeriesProperties.candleStyle.downColor": "#ef4444"
+                }, "studies": []
+            });
+
+            function fetchChatList() {
+                fetch(`/api/discussion/list?symbol=${currentSymbol}`)
+                    .then(res => res.json())
+                    .then(data => { renderChatList(data); })
+                    .catch(err => console.error("채팅 로드 실패:", err));
+            }
+
+            function renderChatList(data) {
+                const chatWindow = document.getElementById('chat-window');
+                const isScrolledToBottom = (chatWindow.scrollHeight - chatWindow.clientHeight <= chatWindow.scrollTop + 100);
+
+                let html = '';
+                if (!data || data.length === 0) {
+                    html = '<div class="text-center text-slate-600 text-xs py-10">첫 번째 의견을 남겨보세요! ✨</div>';
+                } else {
+                    data.forEach(post => {
+                        const alignClass = post.isMine ? 'self-end items-end' : 'self-start items-start';
+                        const bubbleClass = post.isMine ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none';
+                        const nameTag = post.isMine ? '' : `<span class="text-[10px] text-slate-500 mb-1 ml-2 font-semibold">${post.nickname}</span>`;
+
+                        html += `
+                            <div class="flex flex-col max-w-[85%] lg:max-w-[60%] ${alignClass}">
+                                ${nameTag}
+                                <div class="${bubbleClass} p-4 rounded-2xl shadow-lg text-sm transition-all animate-in fade-in slide-in-from-bottom-2 duration-300">${post.content}</div>
+                                <span class="text-[8px] text-slate-600 mt-1 px-2">${post.createdAt}</span>
+                            </div>
+                        `;
+                    });
+                }
+
+                if (chatWindow.innerHTML !== html) {
+                    chatWindow.innerHTML = html;
+                    if (isScrolledToBottom) {
+                        chatWindow.scrollTop = chatWindow.scrollHeight;
+                    }
+                }
+            }
+
+            function sendDiscussion() {
+                const input = document.getElementById('chat-input');
+                const content = input.value.trim();
+                if (!content) return;
+                input.value = '';
+                const params = new URLSearchParams();
+                params.append('symbol', currentSymbol);
+                params.append('content', content);
+
+                fetch('/api/discussion/add', { method: 'POST', body: params })
+                    .then(res => res.text()).then(data => {
+                        if (data === 'success') fetchChatList();
+                        else alert("로그인 후 이용해주세요.");
+                    });
+            }
+
+            function saveMemoLog() {
+                const input = document.getElementById('memo-log-input');
+                if (!input.value.trim()) return;
+                const params = new URLSearchParams();
+                params.append('symbol', currentSymbol);
+                params.append('content', input.value);
+                fetch('/api/watchlist/memo/add', { method: 'POST', body: params })
+                    .then(res => res.text()).then(data => {
+                        if (data === 'success') location.reload();
+                        else alert("저장 실패");
+                    });
+            }
+
+            function deleteMemoLog(id) {
+                if (!confirm("삭제하시겠습니까?")) return;
+                const params = new URLSearchParams();
+                params.append('id', id);
+                fetch('/api/watchlist/memo/delete', { method: 'POST', body: params })
+                    .then(res => res.text()).then(data => {
+                        if (data === 'success') location.reload();
+                        else alert("실패");
+                    });
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                fetchChatList();
+                setInterval(fetchChatList, 3000);
+                document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') sendDiscussion();
+                });
+                document.getElementById('memo-log-input')?.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        saveMemoLog();
+                    }
+                });
+            });
+        </script>
+    </th:block>
+</div>

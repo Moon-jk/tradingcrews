@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /actuator/
+Disallow: /trading/
+Disallow: /mydashboard/
+Disallow: /my-dashboard
+Disallow: /member/
+Disallow: /todo/
+
+Sitemap: https://www.tradingcrews.com/sitemap.xml

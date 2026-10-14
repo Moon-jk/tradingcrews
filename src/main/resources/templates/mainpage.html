@@ -1,0 +1,397 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}">
+
+  <head>
+    <title>Main | TradingCrews:트루</title>
+    <link rel="stylesheet" th:href="@{/css/main.css}" />
+  </head>
+
+  <span layout:fragment="page-title">Market Overview</span>
+
+  <div layout:fragment="content" style="max-width: 1440px; margin: 0 auto;">
+    <div class="p-4 md:p-6 space-y-6">
+
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-6 items-stretch">
+
+        <!-- ==========================================
+             [좌측] 프로필 / 관심종목 / 모의투자
+             ========================================== -->
+        <div class="xl:col-span-3">
+          <div th:if="${session.loginMember != null}"
+            class="main-card h-full backdrop-blur-sm rounded-3xl p-4 md:p-6 flex flex-col border shadow-xl"
+            style="border-color: var(--border-base)">
+
+            <div class="flex items-center justify-between mb-4 md:mb-8">
+              <div class="flex-1 min-w-0">
+                <h4 class="font-bold text-base truncate" style="color:var(--text-primary)">
+                  반가워요, <span th:text="${session.loginMember.nickname}" style="color:var(--accent)">사용자</span>님!
+                </h4>
+                <p class="text-[10px]" style="color:var(--text-muted)">Welcome back to TradingCrews</p>
+              </div>
+              <a href="/my-dashboard"
+                class="text-[10px] font-bold px-3 py-1.5 rounded-lg border transition-colors hover:bg-sky-500/5"
+                style="color:var(--accent); border-color:var(--accent)">전체보기</a>
+            </div>
+
+            <!-- [순서 변경] 모의투자 현황 -->
+            <div class="mb-6">
+              <h3 class="flex items-center gap-2 mb-2 md:mb-4">
+                <span class="w-1.5 h-1.5 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]"></span>
+                <span class="text-xs font-bold" style="color:var(--text-primary)">모의투자 현황</span>
+              </h3>
+              <div class="main-inset rounded-2xl p-4 md:p-5 space-y-2 md:space-y-3 mb-2"
+                style="background: var(--bg-muted)">
+                <div th:if="${myTradingInfo != null}" class="space-y-2 mb-4">
+                  <div class="flex justify-between items-center text-[11px] opacity-70">
+                    <span>통합 총 자산</span>
+                    <span class="font-bold text-[12px]" style="color:var(--text-primary)"
+                      th:text="${myTradingInfo.currencySymbol()} + ${#numbers.formatDecimal(myTradingInfo.totalAsset(), 1, 'COMMA', 0, 'POINT')}"></span>
+                  </div>
+                  <div class="flex justify-between items-center text-[11px]">
+                    <span class="opacity-70">통합 수익률</span>
+                    <span class="font-bold text-[12px]"
+                      th:classappend="${myTradingInfo.profitRate() >= 0} ? 'text-green-500' : 'text-red-500'"
+                      th:text="${(myTradingInfo.profitRate() >= 0 ? '+' : '') + #numbers.formatDecimal(myTradingInfo.profitRate(), 1, 'COMMA', 2, 'POINT') + '%'}"></span>
+                  </div>
+                </div>
+                <a href="/trading"
+                  class="block w-full text-center py-3 rounded-xl text-white font-bold text-xs bg-electric shadow-lg transition-transform active:scale-95">모의투자
+                  바로가기</a>
+              </div>
+            </div>
+
+            <!-- [NEW] AI 통합 브리핑 섹션 -->
+            <div class="flex flex-col gap-6 mt-2">
+              <!-- AI 마켓 센티먼트 -->
+              <div class="flex flex-col">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b"
+                  style="border-color: var(--border-base)">
+                  <h3 class="flex items-center gap-2">
+                    <span
+                      class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.4)]"></span>
+                    <span class="text-[11px] font-black" style="color:var(--text-primary)">AI 마켓 센티먼트</span>
+                  </h3>
+                  <div class="flex items-center gap-1.5">
+                    <span
+                      class="text-[7px] font-black bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded-sm border border-amber-500/20 uppercase tracking-tighter">최근
+                      24시간</span>
+                    <span class="text-[8px] font-bold text-sky-500">LIVE</span>
+                  </div>
+                </div>
+
+                <div
+                  class="w-full h-2 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden flex mb-4 shadow-inner">
+                  <div class="h-full transition-all duration-1000"
+                    th:style="'width: ' + ${marketSentiment.posPercent} + '%; background: #22c55e;'"></div>
+                  <div class="h-full transition-all duration-1000"
+                    th:style="'width: ' + ${marketSentiment.neuPercent} + '%; background: #94a3b8;'"></div>
+                  <div class="h-full transition-all duration-1000"
+                    th:style="'width: ' + ${marketSentiment.negPercent} + '%; background: #ef4444;'"></div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-1 text-[9px] font-black text-center mb-2">
+                  <div class="flex flex-col"><span class="text-green-500">POS</span><span
+                      style="color:var(--text-primary)" th:text="${marketSentiment.posPercent} + '%'"></span></div>
+                  <div class="flex flex-col"><span class="text-slate-500">NEU</span><span
+                      style="color:var(--text-primary)" th:text="${marketSentiment.neuPercent} + '%'"></span></div>
+                  <div class="flex flex-col"><span class="text-red-500">NEG</span><span
+                      style="color:var(--text-primary)" th:text="${marketSentiment.negPercent} + '%'"></span></div>
+                </div>
+              </div>
+
+              <!-- AI 뉴스 요약 -->
+              <div class="flex flex-col">
+                <div class="flex items-center justify-between mb-4 pb-2 border-b"
+                  style="border-color: var(--border-base)">
+                  <h3 class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_8px_var(--accent)]"></span>
+                    <span class="text-[11px] font-black" style="color:var(--text-primary)">최신 AI 뉴스 요약</span>
+                  </h3>
+                  <a href="/infocenter/news" class="bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded text-[9px] font-black hover:bg-sky-500 hover:text-white transition-all uppercase tracking-tighter shadow-sm">More +</a>
+                </div>
+
+                <div class="space-y-3">
+                  <div th:each="news, stat : ${latestAiNews}" th:if="${stat.index < 2}"
+                    class="p-3 rounded-xl border bg-card/30 hover:bg-sky-500/5 transition-all text-left"
+                    style="border-color: var(--border-base)">
+                    <h4 class="text-[11px] font-bold truncate mb-1" style="color:var(--text-primary)"
+                      th:text="${news.headline}">제목</h4>
+                    <p class="text-[9px] font-medium opacity-50 line-clamp-1" th:text="${news.summary}">요약내용</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- [주석처리] 관심종목 섹션
+            <div class="mb-4 md:mb-8">
+              <h3 class="flex items-center gap-2 mb-2 md:mb-4">
+                <span class="w-1.5 h-1.5 rounded-full bg-electric shadow-[0_0_8px_var(--accent)]"></span>
+                <span class="text-xs font-bold" style="color:var(--text-primary)">관심종목</span>
+              </h3>
+              <div class="main-inset rounded-2xl p-3 md:p-4 space-y-2 md:space-y-3" style="background: var(--bg-muted)">
+                <div th:if="${watchlist == null or watchlist.isEmpty()}"
+                  class="py-4 md:py-6 text-center text-[10px] opacity-40">관심 종목이 없습니다.</div>
+                <a th:each="item, stat : ${watchlist}" th:if="${stat.index < 3}"
+                  th:href="@{/chart-search(symbol=${item.symbol})}"
+                  class="watchlist-item flex items-center justify-between p-2.5 md:p-3.5 rounded-xl border bg-card hover:-translate-y-0.5 transition-all shadow-sm"
+                  th:attr="data-symbol=${item.symbol}" style="border-color:var(--border-base)">
+                  <span class="text-sm font-black tracking-wider" style="color:var(--text-primary)"
+                    th:text="${item.symbol}"></span>
+                  <div class="text-right watchlist-price-container">
+                    <p class="text-xs font-bold watchlist-price" style="color:var(--text-primary)">
+                      <span class="animate-pulse opacity-20">---</span>
+                    </p>
+                    <p class="text-[10px] font-bold watchlist-change">
+                      <span class="opacity-10">0.00%</span>
+                    </p>
+                  </div>
+                </a>
+                <a th:if="${totalWatchlistCount > 3}" href="/my-dashboard"
+                  class="block py-2.5 text-center text-[10px] border border-dashed rounded-xl opacity-60 hover:opacity-100 transition-opacity"
+                  style="border-color:var(--border-strong)">
+                  + <span th:text="${totalWatchlistCount - 3}"></span> 더보기
+                </a>
+              </div>
+            </div>
+            -->
+          </div>
+
+          <!-- [GUEST] 비로그인 사이드바: 로그인 유도 + AI 마켓 센티먼트 -->
+          <div th:unless="${session.loginMember != null}"
+            class="main-card h-full rounded-3xl p-6 border shadow-xl flex flex-col"
+            style="border-color: var(--border-base)">
+            <div class="p-4 rounded-2xl mb-6 flex justify-between items-center bg-muted border shadow-sm"
+              style="border-color:var(--border-base)">
+              <div>
+                <p class="text-xs font-bold" style="color:var(--text-primary)">🔒 로그인이 필요합니다</p>
+                <p class="text-[9px] opacity-60">다양한 기능을 만나보세요</p>
+              </div>
+              <a href="/login"
+                class="px-4 py-1.5 bg-electric text-white text-[10px] font-bold rounded-lg shadow-md">로그인</a>
+            </div>
+
+            <!-- [이동됨] AI 마켓 센티먼트 바 -->
+            <div class="flex flex-col mb-8">
+              <div class="flex items-center justify-between mb-4 pb-2 border-b"
+                style="border-color: var(--border-base)">
+                <h3 class="flex items-center gap-2">
+                  <span
+                    class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.4)]"></span>
+                  <span class="text-[11px] font-black" style="color:var(--text-primary)">AI 마켓 센티먼트</span>
+                </h3>
+                <div class="flex items-center gap-1.5">
+                  <span
+                    class="text-[7px] font-black bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded-sm border border-amber-500/20 uppercase tracking-tighter">최근
+                    24시간</span>
+                  <span class="text-[8px] font-bold text-sky-500">LIVE</span>
+                </div>
+              </div>
+
+              <div
+                class="w-full h-2.5 bg-slate-200 dark:bg-white/5 rounded-full overflow-hidden flex mb-4 shadow-inner">
+                <div class="h-full transition-all duration-1000"
+                  th:style="'width: ' + ${marketSentiment.posPercent} + '%; background: #22c55e;'"></div>
+                <div class="h-full transition-all duration-1000"
+                  th:style="'width: ' + ${marketSentiment.neuPercent} + '%; background: #94a3b8;'"></div>
+                <div class="h-full transition-all duration-1000"
+                  th:style="'width: ' + ${marketSentiment.negPercent} + '%; background: #ef4444;'"></div>
+              </div>
+
+              <div class="space-y-2 mb-2">
+                <div class="flex justify-between items-center text-[10px] font-black">
+                  <span class="text-green-500">📈 POS</span>
+                  <span style="color:var(--text-primary)" th:text="${marketSentiment.posPercent} + '%'">0%</span>
+                </div>
+                <div class="flex justify-between items-center text-[10px] font-black">
+                  <span class="text-slate-500">⚖️ NEU</span>
+                  <span style="color:var(--text-primary)" th:text="${marketSentiment.neuPercent} + '%'">0%</span>
+                </div>
+                <div class="flex justify-between items-center text-[10px] font-black">
+                  <span class="text-red-500">NEG 📉</span>
+                  <span style="color:var(--text-primary)" th:text="${marketSentiment.negPercent} + '%'">0%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- [이사 옴] AI 뉴스 브리핑 (사이드바 버전) -->
+            <div class="flex flex-col flex-1">
+              <div class="flex items-center justify-between mb-4 pb-2 border-b"
+                style="border-color: var(--border-base)">
+                <h3 class="flex items-center gap-2">
+                  <span class="w-1.5 h-1.5 rounded-full bg-sky-500 shadow-[0_0_8px_var(--accent)]"></span>
+                  <span class="text-[11px] font-black" style="color:var(--text-primary)">최신 AI 뉴스 요약</span>
+                </h3>
+                <a href="/infocenter/news" class="bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded text-[9px] font-black hover:bg-sky-500 hover:text-white transition-all uppercase tracking-tighter shadow-sm">More +</a>
+              </div>
+
+              <div class="space-y-3">
+                <div th:each="news, stat : ${latestAiNews}" th:if="${stat.index < 2}"
+                  class="p-3 rounded-xl border bg-card/50 hover:bg-sky-500/5 transition-all text-left"
+                  style="border-color: var(--border-base)">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-xs"
+                      th:text="${news.sentiment == 'POSITIVE' ? '📈' : (news.sentiment == 'NEGATIVE' ? '📉' : '⚖️')}"></span>
+                    <span class="text-[9px] font-black tracking-tighter text-sky-500">AI Summary</span>
+                  </div>
+                  <h4 class="text-[11px] font-bold truncate mb-1" style="color:var(--text-primary)"
+                    th:text="${news.headline}">제목</h4>
+                  <p class="text-[9px] font-medium opacity-50 line-clamp-1" th:text="${news.summary}">요약내용</p>
+                </div>
+
+                <div th:if="${latestAiNews == null or latestAiNews.isEmpty()}"
+                  class="py-4 text-center text-[9px] opacity-40">분석 중...</div>
+              </div>
+
+              <div class="mt-6 pt-4 border-t border-dashed" style="border-color: var(--border-base)">
+                <p class="text-[9px] text-slate-500 leading-relaxed text-center">
+                  보다 상세한 데이터와 맞춤형 추전이 필요하신가요?<br />로그인하여 <strong>STOCK LAB</strong>의 모든 기능을 경험하세요.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             [중앙] AI 뉴스 / 공지 / 예측
+             ========================================== -->
+        <div class="xl:col-span-6 flex flex-col gap-6">
+
+
+          <!-- 기존 그리드 (공지 / AI Best Insights) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 flex-none h-auto">
+            <!-- 최근 공지사항 -->
+            <div class="main-card rounded-3xl p-5 border shadow-md flex flex-col"
+              style="border-color: var(--border-base)">
+              <div class="flex items-center justify-between mb-3 border-b pb-3"
+                style="border-color: var(--border-base)">
+                <h3 class="flex items-center gap-2">
+                  <span class="w-1 h-3.5 bg-electric rounded-full"></span>
+                  <span class="text-[11px] font-bold uppercase tracking-tight"
+                    style="color:var(--text-primary)">Notice</span>
+                </h3>
+              </div>
+              <div class="flex-1 flex flex-col justify-start gap-1">
+                <a th:each="notice, loop : ${recentNotices}" th:if="${loop.index < 3}"
+                  th:href="@{|/notice/detail/${notice.id}|}"
+                  class="flex items-center justify-between p-2 hover:bg-sky-500/5 rounded-xl transition-all border border-transparent hover:border-sky-500/20">
+                  <div class="flex items-center gap-3 flex-1 min-w-0">
+                    <span class="text-xs">📢</span>
+                    <span class="text-[11px] truncate font-bold" style="color:var(--text-primary)"
+                      th:text="${notice.title}"></span>
+                  </div>
+                  <span class="text-[9px] opacity-30 font-mono shrink-0 ml-1"
+                    th:text="${#temporals.format(notice.createdAt, 'MM.dd')}"></span>
+                </a>
+              </div>
+            </div>
+            <!-- AI 투자 정보 (AI Best Insights) -->
+            <div class="main-card rounded-3xl p-5 border shadow-md flex flex-col"
+              style="border-color: var(--border-base)">
+              <div class="flex items-center justify-between mb-3 border-b pb-3"
+                style="border-color: var(--border-base)">
+                <h3 class="flex items-center gap-2">
+                  <span class="w-1 h-3.5 bg-amber-500 rounded-full"></span>
+                  <span class="text-[11px] font-bold uppercase tracking-tight" style="color:var(--text-primary)">Best
+                    Insights</span>
+                </h3>
+              </div>
+              <div class="flex-1 flex flex-col justify-start gap-1">
+                <a th:each="news, stat : ${topRecommendedNews}" th:if="${stat.index < 3}"
+                  th:href="@{|/infocenter/${news.id}|}"
+                  class="flex items-center gap-3 p-2 hover:bg-amber-500/5 rounded-xl transition-all border border-transparent hover:border-amber-500/20">
+                  <span class="text-xs">💡</span>
+                  <span class="text-[11px] truncate font-bold" style="color:var(--text-primary)"
+                    th:text="${news.topic}"></span>
+                </a>
+              </div>
+            </div>
+          </div>
+          <!-- 주가 예측 -->
+          <div class="main-card rounded-3xl p-4 md:p-6 border shadow-xl relative flex-1 flex flex-col"
+            style="border-color: var(--border-base)">
+            <div class="flex items-center justify-between mb-4 md:mb-6 border-b pb-2 md:pb-4"
+              style="border-color: var(--border-base)">
+              <h3 class="flex items-center gap-3">
+                <span class="w-1.5 h-6 bg-red-500 rounded-full"></span>
+                <span class="text-lg font-bold" style="color:var(--text-primary)">오늘의 주가 예측</span>
+              </h3>
+              <a href="/prediction"
+                class="px-5 py-2 bg-red-600 text-white rounded-full text-xs font-bold shadow-lg hover:bg-red-500 transition-all">참여하기
+                ></a>
+            </div>
+            <div id="main-prediction-container" class="flex-1 flex items-center justify-center">
+              <div class="loader-spinner"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             [우측] 랭킹
+             ========================================== -->
+        <div class="xl:col-span-3">
+          <div class="main-card rounded-3xl p-4 md:p-6 border shadow-xl h-full flex flex-col"
+            style="border-color: var(--border-base)">
+            <div class="flex items-center justify-between mb-4 md:mb-6 border-b pb-2 md:pb-4"
+              style="border-color: var(--border-base)">
+              <h3 class="text-sm font-black tracking-widest text-electric">랭킹</h3>
+              <span
+                class="text-[9px] font-bold px-2 py-0.5 rounded border border-electric text-electric hover:bg-sky-500/5 transition-colors">실시간</span>
+            </div>
+            <!-- 상단: 모의투자 랭킹 -->
+            <div class="mb-6 pb-6 border-b border-dashed" style="border-color:var(--border-base)">
+              <h3 class="flex items-center gap-2 mb-4">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_#f59e0b]"></span>
+                <span class="text-xs font-bold" style="color:var(--text-primary)">모의투자 랭킹 TOP 3</span>
+              </h3>
+              <div class="space-y-2">
+                <div th:each="entry, stat : ${topRanking}" th:if="${stat.index < 3}"
+                  class="flex items-center justify-between p-3 rounded-xl border bg-card shadow-sm hover:scale-[1.02] transition-transform"
+                  style="border-color:var(--border-base)">
+                  <div class="flex items-center gap-3">
+                    <span class="text-base"
+                      th:text="${stat.index == 0 ? '🥇' : (stat.index == 1 ? '🥈' : '🥉')}"></span>
+                    <span class="text-xs font-bold" style="color:var(--text-primary)"
+                      th:text="${entry.nickname}"></span>
+                  </div>
+                  <span class="text-[10px] font-bold"
+                    th:classappend="${entry.profitRate >= 0} ? 'text-green-500' : 'text-red-500'"
+                    th:text="${(entry.profitRate >= 0 ? '+' : '') + #numbers.formatDecimal(entry.profitRate, 1, 'COMMA', 2, 'POINT') + '%'}"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 하단: 크루 랭킹 -->
+            <div class="flex-1">
+              <h3 class="flex items-center gap-2 mb-4">
+                <span class="w-1.5 h-1.5 rounded-full bg-electric shadow-[0_0_8px_var(--accent)]"></span>
+                <span class="text-xs font-bold" style="color:var(--text-primary)">크루 수익률 순위 TOP 3</span>
+              </h3>
+              <div class="space-y-2">
+                <div th:if="${topCrewRanking == null or topCrewRanking.isEmpty()}"
+                  class="py-4 text-center text-[10px] opacity-40">집계 중...</div>
+                <div th:each="crew, stat : ${topCrewRanking}" th:if="${stat.index < 3}"
+                  class="flex items-center justify-between p-3 rounded-xl border bg-card shadow-sm hover:scale-[1.02] transition-transform"
+                  style="border-color:var(--border-base)">
+                  <div class="flex items-center gap-3">
+                    <span class="text-base"
+                      th:text="${stat.index == 0 ? '🏆' : (stat.index == 1 ? '🥈' : '🥉')}"></span>
+                    <span class="text-xs font-bold" style="color:var(--text-primary)" th:text="${crew.name}"></span>
+                  </div>
+                  <span class="text-[10px] font-bold"
+                    th:classappend="${crew.profitRate >= 0} ? 'text-green-500' : 'text-red-500'"
+                    th:text="${(crew.profitRate >= 0 ? '+' : '') + #numbers.formatDecimal(crew.profitRate, 1, 'COMMA', 2, 'POINT') + '%'}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <th:block layout:fragment="script">
+    <script th:src="@{/js/main.js}"></script>
+  </th:block>
+
+</div>

@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <!-- 🔒 CSRF Token for AJAX requests -->
+  <meta name="_csrf" th:content="${_csrf?.token}" />
+  <meta name="_csrf_header" th:content="${_csrf?.headerName}" />
+  <meta name="google-site-verification" content="fLt5-lZZMMObFbsI5xGyd06uXs_WmG7a6gEkIIpWmjI" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <link rel="icon" type="image/png" th:href="@{/favicon.png}" />
+  <title layout:title-pattern="$CONTENT_TITLE | $LAYOUT_TITLE">TradingCrews:트루</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    th:content="${metaDescription ?: 'TradingCrews:트루 - 주식 시장 데이터 분석 및 커뮤니티 플랫폼. 실시간 뉴스 요약과 시장 지표를 확인하세요.'}" />
+  <meta name="keywords" content="주식, 트레이딩, 모의투자, 경제지표, 뉴스요약, AI뉴스, 주식커뮤니티" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" th:content="${pageTitle ?: 'TradingCrews:트루'}" />
+  <meta property="og:description" th:content="${metaDescription ?: '주식 투자의 새로운 기준, 트레이딩 크루와 함께하세요.'}" />
+  <meta property="og:image" content="https://www.tradingcrews.com/img/og-image.png" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:title" th:content="${pageTitle ?: 'TradingCrews:트루'}" />
+  <meta property="twitter:description" th:content="${metaDescription ?: '주식 투자의 새로운 기준, 트레이딩 크루와 함께하세요.'}" />
+
+  <th:block layout:fragment="head-meta"></th:block>
+
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2447378708832059"
+    crossorigin="anonymous"></script>
+  <link rel="stylesheet" th:href="@{/css/layout.css}" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;700;800;900&display=swap"
+    rel="stylesheet">
+
+  <script>
+    (function () {
+      const theme = localStorage.getItem('tradingcrews-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+
+    tailwind.config = {
+      darkMode: ['class', '[data-theme="dark"]'],
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              800: '#0E1620',
+              900: '#090E18',
+              950: '#040810',
+            },
+            electric: {
+              DEFAULT: '#0369A1',
+              50: '#E0F8FC',
+              100: '#B3EEF8',
+              200: '#80E2F3',
+              300: '#4DD5EE',
+              400: '#26CBE9',
+              500: '#02A6C8',
+              600: '#308097',
+              700: '#1B5F70',
+              800: '#0E404C',
+              900: '#062830',
+            },
+            teal: {
+              DEFAULT: '#308097',
+              500: '#308097',
+              600: '#1B5F70',
+            },
+            slate2: {
+              DEFAULT: '#6275AC',
+              500: '#6275AC',
+              600: '#4D5F8E',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .glass-panel {
+        background-color: var(--bg-overlay);
+        backdrop-filter: blur(20px);
+        border: 1px solid var(--border-base);
+      }
+      .glass-nav {
+        background-color: var(--bg-sidebar);
+        backdrop-filter: blur(16px);
+        border-right: 1px solid var(--border-base);
+      }
+      .blue-glow {
+        box-shadow: 0 0 20px rgba(2, 166, 200, 0.3);
+      }
+      .teal-glow {
+        box-shadow: 0 0 20px rgba(98, 117, 172, 0.3);
+      }
+      .font-display { font-family: 'Outfit', sans-serif; }
+    }
+    
+    :root {
+      --accent: #02A6C8;
+      --accent-glow: rgba(2, 166, 200, 0.4);
+    }
+  </style>
+</head>
+
+<body class="bg-navy-900 text-slate-400 font-sans">
+
+  <!-- ── 페이지 로딩 오버레이 ── -->
+  <div id="page-loader" class="page-loader">
+    <div class="loader-spinner"></div>
+  </div>
+
+  <!-- ── 오버레이 ── -->
+  <div id="sidebar-overlay" onclick="toggleSidebar()" role="button" aria-label="Close sidebar"
+    onkeydown="if(event.key==='Enter')toggleSidebar()"></div>
+  <div id="profile-overlay" onclick="toggleProfilePanel()" role="button" aria-label="Close profile"
+    onkeydown="if(event.key==='Enter')toggleProfilePanel()"></div>
+
+  <!-- ══════════════════════════════════
+       사이드바 (RE-APPLIED PREMIUM DESIGN)
+       ══════════════════════════════════ -->
+  <aside id="sidebar" class="flex flex-col glass-nav border-r border-white/5" aria-label="Main Navigation">
+    <div class="p-6">
+
+      <!-- 로고 + 닫기 -->
+      <div class="flex items-center justify-between mb-10">
+        <a href="/" class="flex items-center gap-3 group">
+          <div
+            class="bg-electric w-10 h-10 flex items-center justify-center rounded-xl blue-glow group-hover:scale-110 transition-transform">
+            <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+            </svg>
+          </div>
+          <h2 class="text-xl font-display font-black tracking-tighter" style="color: var(--text-primary)">
+            TradingCrews<span style="color: var(--accent)">:트루</span></h2>
+        </a>
+        <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-electric transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- 네비게이션 -->
+      <nav id="sidebar-nav" class="space-y-1.5">
+
+
+        <div class="text-[10px] font-black text-slate-600 dark:text-slate-500 uppercase tracking-widest px-4 mb-2">Main
+          Menu</div>
+
+        <a th:href="${session.loginMember == null ? '/crew/explore' : '/crew'}"
+          class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all"><span>🛡️</span>
+          트레이딩 크루</a>
+        <a href="/trading"
+          class="auth-required nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all"><span>📈</span>
+          모의투자</a>
+        <a href="/prediction"
+          class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all"><span>🎯</span>
+          일일 예측</a>
+        <div>
+          <button onclick="toggleInfoMenu(event)"
+            class="nav-link w-full flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all group">
+            <div class="flex items-center gap-3">
+              <span>📊</span> 정보센터
+            </div>
+            <svg id="info-arrow"
+              class="w-4 h-4 transition-transform duration-300 opacity-50 group-hover:opacity-100 group-hover:text-electric"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M19 9l-7 7-7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <div id="info-submenu"
+            class="hidden overflow-hidden transition-all duration-300 mt-1 pl-10 space-y-1 rounded-xl py-2"
+            style="background: var(--bg-muted)">
+            <a href="/infocenter" class="block px-4 py-2.5 text-xs font-bold rounded-lg transition-all"
+              style="color: var(--text-muted)">
+              인사이트 브리핑
+            </a>
+            <a href="/infocenter/macro" class="block px-4 py-2.5 text-xs font-bold rounded-lg transition-all"
+              style="position: relative; color: var(--text-muted);">
+              경제 지표<span
+                style="font-size: 8px; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--accent); color: white; padding: 2px 4px; border-radius: 4px;">UPDATE</span>
+            </a>
+            <a href="/infocenter/news" class="block px-4 py-2.5 text-xs font-bold rounded-lg transition-all"
+              style="position: relative; color: var(--text-muted);">
+              AI 요약 해외뉴스<span
+                style="font-size: 8px; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: var(--accent); color: white; padding: 2px 4px; border-radius: 4px;">UPDATE</span>
+            </a>
+          </div>
+        </div>
+
+        <div>
+          <button onclick="toggleCommunityMenu(event)"
+            class="nav-link w-full flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all group">
+            <div class="flex items-center gap-3">
+              <span>💬</span> 커뮤니티
+            </div>
+            <svg id="community-arrow"
+              class="w-4 h-4 transition-transform duration-300 opacity-50 group-hover:opacity-100 group-hover:text-electric"
+              fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M19 9l-7 7-7-7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <div id="community-submenu"
+            class="hidden overflow-hidden transition-all duration-300 mt-1 pl-10 space-y-1 rounded-xl py-2"
+            style="background: var(--bg-muted)">
+            <a href="/notice"
+              class="block px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-electric hover:bg-white/5 rounded-lg transition-all"
+              style="position: relative;">
+              공지사항<span
+                style="font-size: 8px; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #02A6C8; color: white; padding: 2px 4px; border-radius: 4px;">UPDATE</span>
+            </a>
+            <a href="/community"
+              class="block px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-electric hover:bg-white/5 rounded-lg transition-all">
+              커뮤니티
+            </a>
+          </div>
+        </div>
+
+        <!-- <a href="/community"
+          class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all"><span>💬</span>
+          커뮤니티</a> -->
+        <!-- <a href="/news"
+          class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all"><span>📰</span>
+          실시간 뉴스</a> -->
+        <!-- <a href="/notice"
+          class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all"><span>📅</span>
+          공지사항</a> -->
+        <a href="/magical"
+          class="nav-link flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all"><span>🔮</span>
+          소라고동</a>
+      </nav>
+
+      <div th:if="${session.loginMember != null and session.loginMember.role.name() == 'ADMIN'}"
+        class="mt-8 pt-8 border-t" style="border-color: var(--border-base)">
+        <button onclick="toggleAdminMenu()"
+          class="w-full flex items-center justify-between p-4 rounded-2xl transition-all group border"
+          style="background: var(--bg-muted); color: var(--text-primary); border-color: var(--border-base)">
+          <div class="flex items-center gap-3">
+            <span class="text-lg">⚙️</span>
+            <span class="font-black text-xs uppercase tracking-widest">Admin Control</span>
+          </div>
+          <svg id="admin-arrow" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24" style="color: var(--text-primary)">
+            <path d="M19 9l-7 7-7-7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+
+        <div id="admin-submenu" class="hidden overflow-hidden transition-all duration-300 mt-2 space-y-1">
+          <a href="/admin/members"
+            class="nav-link flex items-center gap-3 p-3.5 rounded-xl transition-all text-xs font-bold">
+            <span>⚡</span> 어드민 허브
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- 프로필 패널 (Glass style) -->
+  <aside id="profile-panel" class="flex flex-col glass-nav">
+    <div class="p-6 h-full flex flex-col overflow-y-auto custom-scrollbar">
+      <div class="flex justify-between items-center mb-10">
+        <h2 class="text-xl font-black uppercase tracking-tighter text-white">My Profile</h2>
+        <button onclick="toggleProfilePanel()" class="p-2 text-slate-400 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M6 18L18 6M6 6l12 12" stroke-width="2" />
+          </svg>
+        </button>
+      </div>
+
+      <div th:if="${session.loginMember != null}" class="flex-1 flex flex-col pt-10">
+        <div class="flex flex-col items-center mb-10">
+          <div
+            class="h-24 w-24 rounded-[2rem] bg-gradient-to-br from-electric/20 to-electric/5 flex items-center justify-center text-3xl font-black text-electric border border-electric/20 mb-5 uppercase blue-glow">
+            <span th:text="${session.loginMember.nickname.substring(0,1)}">M</span>
+          </div>
+          <h3 class="text-xl font-black text-white mb-1" th:text="${session.loginMember.nickname}">사용자</h3>
+          <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Active Member</p>
+        </div>
+
+        <!-- 액션 버튼 영역 -->
+        <div class="grid grid-cols-1 gap-3 mb-10">
+          <a href="/my-dashboard"
+            class="auth-required flex items-center justify-between p-4 rounded-2xl bg-electric/10 border border-electric/20 text-electric hover:bg-electric/20 transition-all group blue-glow">
+            <div class="flex items-center gap-4">
+              <span class="text-xl">💎</span>
+              <span class="text-sm font-black">내 대시보드</span>
+            </div>
+            <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M9 5l7 7-7 7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </div>
+
+        <!-- 최근 본 종목 브리핑 [복구됨] -->
+        <div class="mt-8 flex-1 flex flex-col min-h-0">
+          <div class="flex items-center justify-between mb-4 px-1">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-black text-white uppercase tracking-widest">Recent Markets</span>
+            </div>
+            <button onclick="clearRecentSymbols()"
+              class="text-[10px] font-bold text-slate-500 hover:text-electric transition-colors">Clear</button>
+          </div>
+          <div id="recent-symbols-list" class="flex-1 overflow-y-auto no-scrollbar space-y-2">
+            <!-- JS 렌더링 -->
+          </div>
+        </div>
+
+        <div class="mt-10 pb-6">
+          <form th:action="@{/logout}" method="post" class="w-full">
+            <button type="submit"
+              class="block w-full text-center py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all border border-red-500/20">Logout
+              System</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════
+       메인 래퍼
+       ══════════════════════════════════ -->
+  <div id="main-wrapper">
+
+    <!-- 헤더 -->
+    <header id="main-header"
+      class="h-16 px-4 sm:px-6 flex justify-between items-center shrink-0 border-b relative z-[50]"
+      style="background: var(--bg-overlay); border-color: var(--border-base)">
+      <div class="flex items-center gap-3 sm:gap-5">
+        <button onclick="toggleSidebar()" class="p-2 rounded-xl transition-all border ring-offset-2 active:scale-95"
+          style="background: var(--bg-surface-2); color: var(--text-primary); border-color: var(--border-base)">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+          </svg>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <a href="/" class="p-1 rounded-lg text-slate-600 dark:text-slate-500 hover:text-electric transition-colors">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+            </svg>
+          </a>
+          <span class="text-slate-600 dark:text-slate-700">/</span>
+          <h1 class="text-xs sm:text-sm font-black tracking-widest uppercase" style="color: var(--text-primary)">
+            <span layout:fragment="page-title">Dashboard</span>
+          </h1>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <th:block th:if="${session.loginMember != null}">
+          <div class="hidden sm:flex items-center border rounded-full pl-3 pr-1 py-1 gap-2 shadow-inner"
+            style="background: var(--bg-inset); border-color: var(--border-base)">
+            <span class="text-[10px] font-black tracking-wider" style="color: var(--accent)">TP</span>
+            <span class="text-xs font-bold tp-number" id="tp-display" style="color: var(--text-primary)"
+              th:text="${#numbers.formatInteger(session.loginMember.tp != null ? session.loginMember.tp : 0, 0, 'COMMA')}">0</span>
+            <button onclick="checkAttendance()"
+              class="auth-required bg-electric hover:bg-electric-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 ml-1 blue-glow">
+              출석체크
+            </button>
+          </div>
+        </th:block>
+
+        <!-- 테마 토글 버튼 -->
+        <button id="theme-toggle" aria-label="테마 전환">
+          <!-- 다크모드일 때 보이는 해 아이콘 -->
+          <svg class="icon-sun w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 3v1m0 16v1m8.66-9H21M3 12H2m15.36-6.36l-.71.71M7.05 16.95l-.71.71M18.36 18.36l-.71-.71M7.05 7.05l-.71-.71M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <!-- 라이트모드일 때 보이는 달 아이콘 -->
+          <svg class="icon-moon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+          </svg>
+        </button>
+
+        <!-- 알림 종 버튼 -->
+        <button onclick="openNotificationModal()"
+          class="auth-required relative p-2 text-slate-400 hover:text-white transition-all active:scale-95 group"
+          aria-label="Notifications">
+          <svg class="w-6 h-6 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+          </svg>
+          <span id="notification-badge"
+            class="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[7px] font-black hidden border-[1.5px] shadow-xl"
+            style="border-color: var(--bg-surface)">0</span>
+        </button>
+
+
+
+        <button onclick="toggleProfilePanel()"
+          class="h-9 w-9 rounded-xl flex items-center justify-center text-[11px] font-black text-white shadow-lg active:scale-95 transition-all uppercase border border-white/10"
+          style="background: var(--accent)">
+          <span th:if="${session.loginMember == null}">TC</span>
+          <span th:if="${session.loginMember != null}" th:text="${session.loginMember.nickname.substring(0,1)}">M</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 콘텐츠 -->
+    <main id="main-content" class="flex-1">
+      <div layout:fragment="content"></div>
+
+      <!-- 하단 저작권 -->
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-20 mb-12">
+        <div
+          class="flex flex-col lg:flex-row justify-between items-center gap-8 pt-10 border-t text-center lg:text-left"
+          style="border-color: var(--border-base)">
+          <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+            <span class="text-xl font-display font-black tracking-tighter" style="color: var(--text-primary)">
+              TradingCrews<span style="color: var(--text-muted)">:트루</span>
+            </span>
+            <span class="text-xs font-medium" style="color: var(--text-muted)">&copy; 2026 TradingCrews:트루. All rights
+              reserved.</span>
+          </div>
+          <div class="flex flex-wrap justify-center gap-x-6 sm:gap-x-8 gap-y-4">
+            <a th:href="@{/terms}" class="text-xs font-medium hover:text-electric transition-colors"
+              style="color: var(--text-muted)">이용약관</a>
+            <a th:href="@{/privacy}" class="text-xs font-medium hover:text-electric transition-colors"
+              style="color: var(--text-muted)">개인정보처리방침</a>
+            <button id="contact-modal-btn" class="text-xs font-medium hover:text-electric transition-colors"
+              style="color: var(--text-muted)">운영자 문의</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- 푸터 검색창 -->
+    <footer>
+      <div class="w-full flex justify-center px-4">
+        <div class="w-full max-w-sm relative">
+          <form action="/chart-search" method="get" onsubmit="saveSymbol(this.symbol.value)" class="m-0">
+            <input type="text" id="search-input" name="symbol" placeholder="Search Markets..."
+              class="w-full rounded-xl h-9 px-5 pr-10 text-xs focus:outline-none transition-all shadow-lg"
+              style="background: var(--bg-surface-2); border: 1px solid var(--border-base); color: var(--text-primary)"
+              autocomplete="off" />
+            <button type="submit"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+              aria-label="Submit search">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2.5" />
+              </svg>
+            </button>
+          </form>
+          <ul id="suggestion-list"
+            class="absolute bottom-full left-0 w-full mb-2 rounded-xl max-h-60 overflow-y-auto hidden z-[100] bg-navy-900 border border-white/10 shadow-2xl glass-nav">
+          </ul>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- 운영자 문의 모달 -->
+  <div id="contact-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+    <div id="modal-backdrop" class="absolute inset-0 bg-navy-950/80 backdrop-blur-md"></div>
+    <div id="modal-content"
+      class="relative w-full max-w-sm glass-panel p-10 rounded-[2.5rem] border border-white/10 shadow-2xl scale-95 opacity-0 transition-all duration-300">
+      <button id="close-modal" class="absolute top-6 right-6 text-slate-500 hover:text-white transition-colors"><svg
+          class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" />
+        </svg></button>
+      <div class="text-center">
+        <div
+          class="w-16 h-16 bg-electric/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-electric border border-electric/20">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              stroke-width="2" />
+          </svg>
+        </div>
+        <h3 class="text-2xl font-black text-white mb-2 font-display">Operator Support</h3>
+        <p class="text-slate-500 mb-8 text-sm font-bold">Fastest response via Instagram DM.</p>
+        <a href="https://www.instagram.com/dog_baljak/" target="_blank" rel="noopener noreferrer"
+          class="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white font-black py-4 px-6 rounded-2xl transition-all shadow-lg shadow-pink-500/20 active:scale-95">
+          DM @dog_baljak
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script th:inline="javascript">
+    const IS_LOGGED_IN = /*[[${session.loginMember != null}]]*/ false;
+  </script>
+
+  <!-- 🔒 글로벌 CSRF 토큰 자동 첨부 (모든 fetch POST/PUT/DELETE에 자동 적용) -->
+  <script>
+    (function () {
+      const _origFetch = window.fetch;
+      window.fetch = function (url, opts) {
+        opts = opts || {};
+        const method = (opts.method || 'GET').toUpperCase();
+        if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+          const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+          const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+          if (csrfToken && csrfHeader) {
+            opts.headers = opts.headers || {};
+            if (opts.headers instanceof Headers) {
+              opts.headers.set(csrfHeader, csrfToken);
+            } else {
+              opts.headers[csrfHeader] = csrfToken;
+            }
+          }
+        }
+        return _origFetch.call(this, url, opts);
+      };
+    })();
+  </script>
+
+  <script th:src="@{/js/layout.js}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const modalBtn = document.getElementById('contact-modal-btn');
+      const modal = document.getElementById('contact-modal');
+      const content = document.getElementById('modal-content');
+      const closeBtn = document.getElementById('close-modal');
+      const backdrop = document.getElementById('modal-backdrop');
+
+      const openModal = () => {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+          content.classList.remove('opacity-0', 'scale-95');
+          content.classList.add('opacity-100', 'scale-100');
+        }, 10);
+      };
+
+      const closeModal = () => {
+        content.classList.remove('opacity-100', 'scale-100');
+        content.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }, 300);
+      };
+
+      modalBtn?.addEventListener('click', openModal);
+      closeBtn?.addEventListener('click', closeModal);
+      backdrop?.addEventListener('click', closeModal);
+    });
+  </script>
+  <th:block layout:fragment="script"></th:block>
+
+  <script>
+    function checkAttendance() {
+      fetch('/attendance/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+        .then(response => response.json())
+        .then(data => {
+          alert(data.message);
+          if (data.success) location.reload();
+        })
+        .catch(err => alert("Error syncing attendance."));
+    }
+  </script>
+
+  <!-- ── 알림 통합 모달 ── -->
+  <div id="notification-modal" class="fixed inset-0 z-[110] hidden items-center justify-center p-4">
+    <div onclick="closeNotificationModal()" class="absolute inset-0 bg-navy-950/80 backdrop-blur-md"></div>
+    <div
+      class="relative w-full max-w-lg bg-navy-900 border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-modal-in">
+
+      <!-- 헤더 -->
+      <div class="pl-8 pr-20 py-6 border-b border-white/5 flex items-center justify-between bg-white/5">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-electric/10 flex items-center justify-center">
+            <svg class="w-6 h-6 text-electric" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-black text-white uppercase tracking-tighter">Notification History</h2>
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">최근 20개의 활동 소식</p>
+          </div>
+        </div>
+        <button onclick="markAllNotificationsRead()"
+          class="text-[10px] font-black text-electric bg-electric/10 px-4 py-2 rounded-xl hover:bg-electric/20 transition-all border border-electric/20">모두
+          읽기 & 숨기기</button>
+      </div>
+
+      <!-- 리스트 -->
+      <div id="notification-list" class="flex-1 overflow-y-auto no-scrollbar p-4 space-y-2 pb-8">
+        <!-- JS 렌더링 -->
+        <div id="notification-empty" class="py-20 text-center">
+          <div class="w-16 h-16 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-5 opacity-20">
+            <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                stroke-width="2" />
+            </svg>
+          </div>
+          <p class="text-sm font-bold text-slate-500">새로운 알림이 없습니다</p>
+        </div>
+      </div>
+
+      <button onclick="closeNotificationModal()"
+        class="absolute top-6 right-8 p-2 text-slate-500 hover:text-white transition-colors">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <style>
+    .animate-modal-in {
+      animation: modalBlurIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes modalBlurIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+        filter: blur(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+        filter: blur(0);
+      }
+    }
+  </style>
+
+  <!-- ── 공통 알림/확인 모달 ── -->
+  <div id="confirm-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+    <div id="confirm-modal-backdrop" class="absolute inset-0 bg-navy-950/80 backdrop-blur-md"></div>
+    <div id="confirm-modal-content"
+      class="relative w-full max-w-sm glass-panel p-8 md:p-10 rounded-[2.5rem] border border-white/10 shadow-2xl scale-95 opacity-0 transition-all duration-300">
+      <div class="text-center">
+        <div
+          class="w-16 h-16 bg-electric/10 rounded-2xl flex items-center justify-center mx-auto mb-6 text-electric border border-electric/20">
+          <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 15v2m0-8V11m8.944-1H21M3 12H2m15.36-6.36l-.71.71M7.05 16.95l-.71.71M18.36 18.36l-.71-.71M7.05 7.05l-.71-.71M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        </div>
+        <h3 id="confirm-modal-title" class="text-xl font-black text-white mb-2 font-display">알림</h3>
+        <p id="confirm-modal-message" class="text-slate-500 mb-8 text-sm font-bold">로그인이 필요한 서비스입니다.</p>
+
+        <div class="flex gap-3">
+          <button id="confirm-modal-cancel"
+            class="flex-1 py-4 px-6 rounded-2xl bg-white/5 text-slate-400 font-black text-xs uppercase tracking-widest hover:bg-white/10 transition-all">취소</button>
+          <button id="confirm-modal-ok"
+            class="flex-1 py-4 px-6 rounded-2xl bg-electric text-white font-black text-xs uppercase tracking-widest hover:bg-electric-600 transition-all shadow-lg shadow-electric/20">로그인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 알림 시스템 스크립트 -->
+  <script>
+    // 미읽음 알림 수 조회
+    function loadUnreadCount() {
+      if (!IS_LOGGED_IN) return;
+      fetch('/notifications/unread-count')
+        .then(r => r.json())
+        .then(data => {
+          const badge = document.getElementById('notification-badge');
+          if (!badge) return;
+          if (data.count > 0) {
+            badge.textContent = data.count > 99 ? '99+' : data.count;
+            badge.classList.remove('hidden');
+          } else {
+            badge.classList.add('hidden');
+          }
+        })
+        .catch(() => { });
+    }
+
+    // 모달 열기/닫기
+    function openNotificationModal() {
+      document.getElementById('notification-modal').classList.remove('hidden');
+      document.getElementById('notification-modal').classList.add('flex');
+      loadNotifications();
+    }
+    function closeNotificationModal() {
+      document.getElementById('notification-modal').classList.add('hidden');
+      document.getElementById('notification-modal').classList.remove('flex');
+    }
+
+    // 알림 목록 렌더링
+    function loadNotifications() {
+      if (!IS_LOGGED_IN) return;
+      const list = document.getElementById('notification-list');
+      const empty = document.getElementById('notification-empty');
+      if (!list || !empty) return;
+
+      fetch('/notifications')
+        .then(r => r.ok ? r.json() : [])
+        .then(items => {
+          Array.from(list.children).forEach(c => { if (c !== empty) c.remove(); });
+          if (!items || items.length === 0) {
+            empty.style.display = 'block';
+            return;
+          }
+          empty.style.display = 'none';
+          items.forEach(n => {
+            const card = document.createElement('div');
+            card.className = 'group relative flex flex-col p-5 bg-white/5 border border-white/5 rounded-2xl hover:border-electric/30 transition-all hover:bg-white/10';
+            card.innerHTML = `
+                <div class="flex items-start justify-between gap-4 mb-2">
+                  <div class="flex-1 min-w-0">
+                     <h4 class="text-sm font-black text-white mb-1 truncate">${n.title || '알림'}</h4>
+                     <p class="text-[11px] text-slate-400 leading-snug line-clamp-2">${n.message || ''}</p>
+                  </div>
+                  <button onclick="hideSingleNotification(${n.id}, event)" 
+                    class="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all" aria-label="Dismiss">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M6 18L18 6M6 6l12 12" stroke-width="2.5" />
+                    </svg>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between mt-3">
+                  <span class="text-[9px] font-black uppercase text-slate-600 tracking-wider">${n.createdAt}</span>
+                  ${n.link ? `
+                  <a href="${n.link}" onclick="handleNotificationClick(${n.id}, ${n.isRead}, event)" 
+                     class="text-[10px] font-black text-electric flex items-center gap-1 hover:underline">
+                    보러가기 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="3"/></svg>
+                  </a>` : ''}
+                </div>
+                ${!n.isRead ? '<div class="absolute top-3 left-3 w-2 h-2 rounded-full animate-pulse ring-4" style="background: var(--accent); --tw-ring-color: var(--accent-light)"></div>' : ''}
+            `;
+            list.appendChild(card);
+          });
+        })
+        .catch(err => {
+          console.error('알림 렌더링 실패:', err);
+          empty.style.display = 'block';
+        });
+    }
+
+    // 개별 읽기 처리
+    function handleNotificationClick(id, isRead, e) {
+      if (!isRead) {
+        fetch(`/notifications/${id}/read`, { method: 'POST' })
+          .then(() => loadUnreadCount())
+          .catch(() => { });
+      }
+    }
+
+    // 개별 숨기기
+    function hideSingleNotification(id, e) {
+      if (!id) return;
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+
+      fetch(`/notifications/${id}/hide`, { method: 'POST' })
+        .then(r => {
+          if (!r.ok) throw new Error('Hide failed');
+          loadNotifications();
+          loadUnreadCount();
+        })
+        .catch(err => {
+          console.error('알림 숨김 실패:', err);
+          alert('알림을 숨기지 못했습니다.');
+        });
+    }
+
+    // 전체 읽기 & 숨기기
+    function markAllNotificationsRead() {
+      fetch('/notifications/read-all', { method: 'POST' })
+        .then(() => {
+          loadUnreadCount();
+          loadNotifications();
+          setTimeout(closeNotificationModal, 500);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadUnreadCount);
+  </script>
+
+</body>
+
+</html>

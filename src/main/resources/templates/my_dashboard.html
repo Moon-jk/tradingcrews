@@ -1,0 +1,770 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+    <head>
+        <title>My Dashboard</title>
+        <style>
+            .watchlist-card:hover .delete-btn {
+                opacity: 1;
+            }
+
+            /* 카드의 높이와 너비를 확실하게 고정합니다 */
+            .watchlist-card {
+                cursor: pointer;
+                width: 280px;
+                height: 160px;
+                position: relative;
+                overflow: hidden;
+                flex-shrink: 0;
+            }
+
+            /* 모바일에서 카드가 너무 크면 화면을 꽉 채우지 않도록 반응형 조정 (선택사항) */
+            @media (max-width: 640px) {
+                .watchlist-card {
+                    width: 240px;
+                    height: 140px;
+                }
+            }
+
+            /* 위젯이 담길 컨테이너 */
+            .tv-mini-widget {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 1;
+                pointer-events: none;
+            }
+
+            .click-layer {
+                position: absolute;
+                inset: 0;
+                z-index: 5;
+            }
+
+            .symbol-badge {
+                position: absolute;
+                bottom: 12px;
+                right: 12px;
+                z-index: 10;
+                pointer-events: none;
+            }
+
+            .delete-btn {
+                z-index: 20 !important;
+            }
+
+            /* 가로 스크롤바 디자인 */
+            .custom-scrollbar::-webkit-scrollbar {
+                height: 6px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: rgba(30, 41, 59, 0.5);
+                border-radius: 10px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #334155;
+                border-radius: 10px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #3b82f6;
+            }
+        </style>
+    </head>
+
+    <div layout:fragment="content" class="max-w-[1200px] mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- 💰 포인트 & 일일 미션 요약 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- 포인트 현황 -->
+            <div class="lg:col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 p-6 rounded-3xl shadow-xl border border-white/10 relative overflow-hidden group">
+                <div class="relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-white/70 text-xs font-bold tracking-widest uppercase">My Trade Points</span>
+                        <span class="bg-white/20 text-white text-[10px] px-2 py-1 rounded-lg backdrop-blur-md">Active</span>
+                    </div>
+                    <div class="flex items-baseline gap-2 mb-1">
+                        <h2 class="text-4xl font-black tp-number tracking-tight" id="dashboard-tp" th:text="${#numbers.formatInteger(member.tp, 0, 'COMMA')}">0</h2>
+                        <span class="text-blue-100 font-bold">TP</span>
+                    </div>
+                    <p class="text-blue-100/60 text-[11px] mb-4">가상 자산 및 프리미엄 서비스 이용에 사용됩니다.</p>
+                    <button onclick="openTpModal()" class="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg backdrop-blur-md transition-all">
+                        내역 확인 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"/></svg>
+                    </button>
+                </div>
+                <!-- 배경 장식 -->
+                <div class="absolute -right-4 -bottom-4 w-32 h-32 bg-white/10 rounded-full blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
+            </div>
+
+            <!-- 일일 미션 현황 -->
+            <div class="lg:col-span-2 border p-6 rounded-3xl flex flex-col md:flex-row gap-6 items-center"
+                 style="background: var(--bg-surface); border-color: var(--border-base)">
+                <div class="flex-1 w-full">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold flex items-center gap-2 text-sm" style="color: var(--text-primary)">
+                            <span style="color: var(--accent)">🎯</span> 일일 미션 리포트
+                        </h3>
+                        <span class="text-[10px] font-mono" style="color: var(--text-muted)" th:text="${#temporals.format(T(java.time.LocalDate).now(), 'yyyy.MM.dd')}">2026.03.12</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- 미션 1: 출석 -->
+                        <div class="flex items-center justify-between p-3 rounded-2xl border transition-all"
+                             th:classappend="${member.isAttendanceCompleted(T(java.time.LocalDate).now()) ? 'bg-blue-500/10 border-blue-500/30' : ''}"
+                             th:style="${!member.isAttendanceCompleted(T(java.time.LocalDate).now()) ? 'background: var(--bg-surface-2); border-color: var(--border-base)' : ''}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                                     th:classappend="${member.isAttendanceCompleted(T(java.time.LocalDate).now()) ? 'bg-blue-500 text-white' : ''}"
+                                     th:style="${!member.isAttendanceCompleted(T(java.time.LocalDate).now()) ? 'background: var(--bg-muted); color: var(--text-muted)' : ''}">
+                                    <span th:if="${member.isAttendanceCompleted(T(java.time.LocalDate).now())}">✓</span>
+                                    <span th:unless="${member.isAttendanceCompleted(T(java.time.LocalDate).now())}">1</span>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold" th:classappend="${member.isAttendanceCompleted(T(java.time.LocalDate).now()) ? 'text-blue-500' : ''}" th:style="${!member.isAttendanceCompleted(T(java.time.LocalDate).now()) ? 'color: var(--text-primary)' : ''}">일일 출석체크</p>
+                                    <p class="text-[10px]" style="color: var(--text-muted)">+50 TP</p>
+                                </div>
+                            </div>
+                            <button th:if="${!member.isAttendanceCompleted(T(java.time.LocalDate).now())}"
+                                    onclick="checkAttendance()"
+                                    class="text-[10px] font-bold px-3 py-1.5 transition-all rounded-lg"
+                                    style="background: var(--bg-muted); color: var(--text-secondary)">
+                                수행하기
+                            </button>
+                            <span th:if="${member.isAttendanceCompleted(T(java.time.LocalDate).now())}" class="text-[10px] font-bold text-blue-500">완료</span>
+                        </div>
+
+                        <!-- 미션 2: 카드뉴스 읽기 -->
+                        <div class="flex items-center justify-between p-3 rounded-2xl border transition-all"
+                             th:classappend="${member.isCardNewsMissionCompleted(T(java.time.LocalDate).now()) ? 'bg-indigo-500/10 border-indigo-500/30' : ''}"
+                             th:style="${!member.isCardNewsMissionCompleted(T(java.time.LocalDate).now()) ? 'background: var(--bg-surface-2); border-color: var(--border-base)' : ''}">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm"
+                                     th:classappend="${member.isCardNewsMissionCompleted(T(java.time.LocalDate).now()) ? 'bg-indigo-500 text-white' : ''}"
+                                     th:style="${!member.isCardNewsMissionCompleted(T(java.time.LocalDate).now()) ? 'background: var(--bg-muted); color: var(--text-muted)' : ''}">
+                                    <span th:if="${member.isCardNewsMissionCompleted(T(java.time.LocalDate).now())}">✓</span>
+                                    <span th:unless="${member.isCardNewsMissionCompleted(T(java.time.LocalDate).now())}">2</span>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold" th:classappend="${member.isCardNewsMissionCompleted(T(java.time.LocalDate).now()) ? 'text-indigo-500' : ''}" th:style="${!member.isCardNewsMissionCompleted(T(java.time.LocalDate).now()) ? 'color: var(--text-primary)' : ''}">카드뉴스 1회 정독</p>
+                                    <p class="text-[10px]" style="color: var(--text-muted)">+50 TP</p>
+                                </div>
+                            </div>
+                            <a th:if="${!member.isCardNewsMissionCompleted(T(java.time.LocalDate).now())}"
+                                    href="/infocenter"
+                                    class="text-[10px] font-bold px-3 py-1.5 transition-all rounded-lg"
+                                    style="background: var(--bg-muted); color: var(--text-secondary)">
+                                정독하러 가기
+                            </a>
+                            <span th:if="${member.isCardNewsMissionCompleted(T(java.time.LocalDate).now())}" class="text-[10px] font-bold text-indigo-500">완료</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 달성률 파이 -->
+                <div class="flex flex-col items-center justify-center border-l pl-6 hidden md:flex" style="border-color: var(--border-base)">
+                    <div class="relative w-24 h-24 flex items-center justify-center">
+                        <svg class="w-24 h-24 transform -rotate-90">
+                            <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="8" fill="transparent" style="color: var(--bg-muted)"></circle>
+                            <circle cx="48" cy="48" r="40" stroke="currentColor" stroke-width="8" fill="transparent" class="text-blue-500"
+                                    th:style="|stroke-dasharray: 251.2; stroke-dashoffset: \${251.2 - (member.getMissionCount(T(java.time.LocalDate).now()) * 125.6)}|"></circle>
+                        </svg>
+                        <div class="absolute flex flex-col items-center">
+                            <span class="text-sm font-black" style="color: var(--text-primary)" th:text="|\${member.getMissionCount(T(java.time.LocalDate).now()) * 50}%|">0%</span>
+                        </div>
+                    </div>
+                    <p class="text-[10px] font-bold mt-2 uppercase tracking-widest" style="color: var(--text-muted)">Progress</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- [New] Latest Prediction Section -->
+        <div id="latest-prediction-section" class="hidden">
+            <div class="p-6 rounded-3xl relative overflow-hidden group border" style="background: var(--bg-surface); border-color: var(--border-base)">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 relative z-10">
+                    <div>
+                        <div class="flex items-center gap-2 mb-3">
+                            <span id="prediction-tag" class="px-2 py-0.5 bg-blue-500/10 text-blue-500 text-[10px] font-black rounded border border-blue-500/20 uppercase tracking-widest inline-block">LIVE PREDICTION</span>
+                        </div>
+                        <h3 id="prediction-title" class="text-xl md:text-2xl font-bold leading-tight" style="color: var(--text-primary)">--</h3>
+                    </div>
+                    <div class="text-left md:text-right">
+                        <p class="text-[10px] font-bold uppercase mb-1 tracking-tighter" style="color: var(--text-muted)">Participation Pool</p>
+                        <p class="text-2xl font-black" style="color: var(--accent)"><span id="prediction-pool">0</span> <span class="text-xs font-bold" style="color: var(--text-muted)">TP</span></p>
+                    </div>
+                </div>
+
+                <div id="prediction-options" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 relative z-10">
+                    <!-- Options will be injected here -->
+                </div>
+
+                <div id="prediction-result-msg" class="hidden p-4 rounded-2xl border text-center mb-6 relative z-10" style="background: var(--bg-inset); border-color: var(--border-base)">
+                    <p class="text-sm font-bold" id="result-text" style="color: var(--accent)"></p>
+                </div>
+
+                <div class="text-right relative z-10">
+                    <a href="/prediction" class="inline-flex items-center gap-2 text-xs font-bold transition-colors group" style="color: var(--text-muted)">
+                        상세 내역 및 참여하기
+                        <svg class="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2.5"/></svg>
+                    </a>
+                </div>
+
+                <!-- Ambient Glow Behind -->
+                <div class="absolute -right-10 -top-10 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all duration-700"></div>
+            </div>
+        </div>
+
+        <div class="p-4 sm:p-6 rounded-3xl relative border" style="background: var(--bg-surface); border-color: var(--border-base)">
+            <h3 class="font-bold mb-4 sm:mb-6 flex items-center gap-2 text-sm sm:text-base" style="color: var(--text-primary)">
+                <span style="color: #f59e0b">⭐</span> 관심 종목 실시간 시세
+            </h3>
+
+            <div id="watchlist-container"
+                class="flex flex-nowrap gap-4 overflow-x-auto pb-6 custom-scrollbar items-center"
+                style="scroll-snap-type: x mandatory;">
+
+                <div th:each="item : ${watchlist}"
+                    class="watchlist-card rounded-2xl border hover:border-blue-500/50 transition-all group shadow-lg"
+                    style="scroll-snap-align: start; background: var(--bg-surface-2); border-color: var(--border-base)">
+
+                    <div class="click-layer" th:onclick="goToChart([[${item.symbol}]])"></div>
+
+                    <button type="button" th:onclick="event.stopPropagation(); togglePin([[${item.symbol}]])"
+                        class="delete-btn absolute top-2 left-2 w-7 h-7 flex items-center justify-center rounded-lg transition-all text-[11px] backdrop-blur-sm"
+                        th:classappend="${item.pinned ? 'bg-amber-500/90 text-white opacity-100 shadow-[0_0_10px_rgba(245,158,11,0.5)]' : 'bg-slate-700/50 text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-amber-500/50 hover:text-white'}"
+                        title="메인화면에 고정 (최대 3개)">
+                        ⭐
+                    </button>
+
+                    <button type="button" th:onclick="event.stopPropagation(); removeSymbol([[${item.symbol}]])"
+                        class="delete-btn opacity-0 group-hover:opacity-100 absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500 hover:text-white transition-all text-xs backdrop-blur-sm">
+                        ✕
+                    </button>
+
+                    <div class="symbol-badge">
+                        <p class="text-[10px] font-black px-2 py-1 rounded border uppercase shadow-sm"
+                           style="background: var(--bg-overlay); color: var(--text-primary); border-color: var(--border-base)"
+                            th:text="${item.symbol}">SYMBOL</p>
+                    </div>
+
+                    <div th:id="'tv-mini-' + ${item.symbol}" class="tv-mini-widget"></div>
+                </div>
+
+                <button type="button" onclick="openAddModal()"
+                    class="flex-none w-[100px] h-[136px] sm:w-[100px] sm:h-[136px] rounded-2xl border border-dashed cursor-pointer hover:border-blue-500/50 transition-all flex flex-col items-center justify-center group outline-none relative z-10 shrink-0 self-center mx-4 active:scale-95"
+                    style="background: var(--bg-inset); border-color: var(--border-base)">
+                    <div
+                        class="w-10 h-10 rounded-full flex items-center justify-center mb-2 group-hover:bg-blue-500/10 transition-colors"
+                        style="background: var(--bg-surface)">
+                        <span class="text-2xl group-hover:text-blue-500 leading-none pb-1" style="color: var(--text-muted)">+</span>
+                    </div>
+                    <span
+                        class="text-[10px] font-bold group-hover:text-blue-500 uppercase tracking-widest"
+                        style="color: var(--text-muted)">Add</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 저장된 정보센터 글 목록 (내 스크랩북) -->
+        <div class="p-4 sm:p-6 rounded-3xl relative mt-8 border" style="background: var(--bg-surface); border-color: var(--border-base)">
+            <h3 class="font-bold mb-4 sm:mb-6 flex items-center gap-2 text-sm sm:text-base" style="color: var(--text-primary)">
+                <span style="color: var(--accent)">📑</span> 내 스크랩북 (저장된 리포트)
+            </h3>
+
+            <div th:if="${savedNewsList == null or savedNewsList.isEmpty()}"
+                class="text-sm italic py-6 text-center border border-dashed rounded-2xl"
+                style="color: var(--text-muted); border-color: var(--border-base); background: var(--bg-inset)">
+                저장된 리포트가 없습니다. 정보센터에서 유용한 리포트를 스크랩해보세요!
+            </div>
+
+            <div th:if="${savedNewsList != null and !savedNewsList.isEmpty()}"
+                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <a th:each="news : ${savedNewsList}" th:href="@{|/infocenter/${news.id}|}"
+                    class="block rounded-2xl border p-5 transition-all shadow-md group"
+                    style="background: var(--bg-surface-2); border-color: var(--border-base)">
+                    <div class="flex flex-col h-full justify-between">
+                        <div>
+                            <div class="text-xs mb-2 font-mono flex items-center justify-between" style="color: var(--text-muted)">
+                                <span th:text="${#temporals.format(news.createdDate, 'yyyy-MM-dd')}">2026-03-05</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
+                                    fill="currentColor" style="color: var(--accent)">
+                                    <path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+                                </svg>
+                            </div>
+                            <div class="font-bold text-sm leading-snug line-clamp-3 group-hover:text-blue-500 transition-colors"
+                                 style="color: var(--text-primary)"
+                                th:text="${news.topic}">주제</div>
+                        </div>
+                        <div
+                            class="mt-4 text-[10px] text-slate-500 border-t border-slate-800 pt-3 flex justify-between">
+                            <span>STOCK LAB</span>
+                            <span>자세히 보기 &rarr;</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <div id="add-modal-overlay"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4 transition-opacity duration-300 opacity-0">
+            <div id="add-modal-content"
+                class="bg-slate-900 border border-slate-700 w-full max-w-md rounded-3xl shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[80vh]">
+
+                <div class="flex justify-between items-center p-6 border-b border-slate-800">
+                    <h3 class="text-white font-bold text-lg">관심 종목 추가</h3>
+                    <button onclick="closeAddModal()"
+                        class="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="p-6 flex-1 overflow-hidden flex flex-col">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <input type="text" id="modal-search-input"
+                            class="w-full bg-slate-950 border border-slate-700 text-white text-sm rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block pl-12 p-4 outline-none placeholder-slate-600 transition-all"
+                            placeholder="종목명 또는 티커 검색 (예: Apple, TSLA)" autocomplete="off">
+                    </div>
+
+                    <div class="mt-4 flex-1 overflow-y-auto custom-scrollbar min-h-[200px]">
+                        <ul id="modal-suggestion-list" class="space-y-2">
+                            <li id="modal-initial-msg" class="text-center text-slate-600 text-xs py-10 italic">
+                                검색어를 입력하여 종목을 찾아보세요.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TP History Modal -->
+        <div id="tp-modal-overlay"
+            class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200] hidden flex items-center justify-center p-4 transition-opacity duration-300 opacity-0">
+            <div id="tp-modal-content"
+                class="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-3xl shadow-2xl transform scale-95 transition-transform duration-300 flex flex-col max-h-[80vh]">
+
+                <div class="flex justify-between items-center p-6 border-b border-slate-800">
+                    <h3 class="text-white font-bold text-lg">포인트 입출금 내역</h3>
+                    <button onclick="closeTpModal()"
+                        class="text-slate-500 hover:text-white p-2 rounded-xl hover:bg-slate-800 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar">
+                    <div id="tp-history-container" class="space-y-3">
+                        <!-- History items will be injected here -->
+                        <div class="text-center py-10">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <th:block layout:fragment="script">
+        <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+
+        <script th:inline="javascript">
+            /* ================= 기존 위젯 로직 ================= */
+            function initMiniWidget(symbol) {
+                const containerId = 'tv-mini-' + symbol;
+                if (!document.getElementById(containerId)) return;
+
+                // 모바일 대응 높이 조정
+                const isMobile = window.innerWidth < 640;
+                const widgetHeight = isMobile ? "140" : "160";
+
+                new TradingView.MediumWidget({
+                    "symbols": [
+                        [symbol, symbol]
+                    ],
+                    "chartOnly": false,
+                    "width": "100%",
+                    "height": widgetHeight,
+                    "locale": "kr",
+                    "colorTheme": "dark",
+                    "gridLineColor": "rgba(42, 46, 57, 0)",
+                    "fontColor": "#787b86",
+                    "isTransparent": true,
+                    "autosize": false,
+                    "container_id": containerId,
+                    "hideDateRanges": true,
+                    "hideMarketStatus": true,
+                    "scalePosition": "no"
+                });
+            }
+
+            function goToChart(symbol) { if (symbol) location.href = '/chart-search?symbol=' + symbol; }
+
+            function removeSymbol(symbol) {
+                if (!symbol || !confirm(symbol + "을 삭제하시겠습니까?")) return;
+                const params = new URLSearchParams();
+                params.append('symbol', symbol);
+                fetch('/api/watchlist/delete', { method: 'POST', body: params })
+                    .then(res => res.text())
+                    .then(data => data === 'success' && location.reload());
+            }
+
+            function togglePin(symbol) {
+                if (!symbol) return;
+                const params = new URLSearchParams();
+                params.append('symbol', symbol);
+                fetch('/api/watchlist/pin', { method: 'POST', body: params })
+                    .then(res => res.text())
+                    .then(data => {
+                        if (data === 'max_limit') {
+                            alert('최대 3개까지만 고정할 수 있습니다.');
+                        } else if (data === 'pinned' || data === 'unpinned') {
+                            location.reload();
+                        } else {
+                            alert('오류가 발생했습니다.');
+                        }
+                    });
+            }
+
+            /* ================= [신규] 모달 & 자동완성 로직 ================= */
+
+            const modalOverlay = document.getElementById('add-modal-overlay');
+            const modalContent = document.getElementById('add-modal-content');
+            const modalInput = document.getElementById('modal-search-input');
+            const modalList = document.getElementById('modal-suggestion-list');
+            let modalDebounceTimer;
+
+            // 1. 모달 열기
+            function openAddModal() {
+                modalOverlay.classList.remove('hidden');
+                // 애니메이션 효과
+                requestAnimationFrame(() => {
+                    modalOverlay.classList.remove('opacity-0');
+                    modalContent.classList.remove('scale-95');
+                    modalContent.classList.add('scale-100');
+                });
+                modalInput.value = '';
+                modalList.innerHTML = '<li class="text-center text-slate-600 text-xs py-10 italic">검색어를 입력하여 종목을 찾아보세요.</li>';
+                setTimeout(() => modalInput.focus(), 100); // 포커스
+            }
+
+            // 2. 모달 닫기
+            function closeAddModal() {
+                modalOverlay.classList.add('opacity-0');
+                modalContent.classList.remove('scale-100');
+                modalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    modalOverlay.classList.add('hidden');
+                }, 300);
+            }
+
+            // 배경 클릭 시 닫기
+            modalOverlay.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) closeAddModal();
+            });
+
+            // 3. 모달 내부 검색 (디바운싱 적용)
+            modalInput.addEventListener('input', (e) => {
+                const keyword = e.target.value.trim();
+                clearTimeout(modalDebounceTimer);
+
+                if (keyword.length < 1) {
+                    modalList.innerHTML = '<li class="text-center text-slate-600 text-xs py-10 italic">검색어를 입력하여 종목을 찾아보세요.</li>';
+                    return;
+                }
+
+                modalDebounceTimer = setTimeout(() => {
+                    fetchModalSuggestions(keyword);
+                }, 300);
+            });
+
+            // 4. API 호출
+            function fetchModalSuggestions(keyword) {
+                modalList.innerHTML = '<li class="text-center text-slate-500 text-xs py-4">검색 중...</li>';
+
+                fetch(`/api/stock/autocomplete?keyword=${encodeURIComponent(keyword)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        renderModalSuggestions(data);
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        modalList.innerHTML = '<li class="text-center text-red-500 text-xs py-4">오류가 발생했습니다.</li>';
+                    });
+            }
+
+            // 5. 결과 렌더링
+            function renderModalSuggestions(stocks) {
+                modalList.innerHTML = '';
+                if (!stocks || stocks.length === 0) {
+                    modalList.innerHTML = '<li class="text-center text-slate-500 text-xs py-10">검색 결과가 없습니다.</li>';
+                    return;
+                }
+
+                stocks.forEach(stock => {
+                    const li = document.createElement('li');
+                    li.className = "flex items-center justify-between p-3 bg-slate-950/50 border border-slate-800 rounded-xl mb-2 cursor-pointer hover:bg-slate-800 hover:border-blue-500/50 transition-all active:scale-[0.98]";
+                    li.innerHTML = `
+                        <div class="flex flex-col">
+                            <span class="text-blue-400 font-bold text-sm">${stock.symbol}</span>
+                            <span class="text-slate-400 text-xs truncate max-w-[200px]">${stock.nameKo ? stock.nameKo : stock.nameEn}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <span class="text-[9px] text-slate-600 border border-slate-700 px-1 rounded">${stock.market}</span>
+                             <span class="text-slate-500 text-lg">＋</span>
+                        </div>
+                    `;
+                    // 클릭 시 관심종목 추가
+                    li.addEventListener('click', () => addToWatchlist(stock.symbol));
+                    modalList.appendChild(li);
+                });
+            }
+
+            // 6. 관심 종목 추가 API 호출
+            function addToWatchlist(symbol) {
+                const params = new URLSearchParams();
+                params.append('symbol', symbol);
+
+                // 로딩 표시 등을 추가하면 더 좋음
+                fetch('/api/watchlist/add', { method: 'POST', body: params })
+                    .then(res => res.text())
+                    .then(data => {
+                        if (data === 'success') {
+                            location.reload(); // 성공 시 새로고침
+                        } else {
+                            alert("이미 추가된 종목이거나 오류가 발생했습니다.");
+                        }
+                    });
+            }
+
+            /* ================= 초기화 ================= */
+            document.addEventListener('DOMContentLoaded', () => {
+                /*<![CDATA[*/
+                const symbols = /*[[${symbols}]]*/[];
+                /*]]>*/
+
+                if (symbols && symbols.length > 0) {
+                    symbols.forEach(s => initMiniWidget(s));
+                }
+            });
+
+            // TP 실시간 연동 (layout.html의 checkAttendance 함수 오버라이딩 느낌)
+            const originalCheckAttendance = window.checkAttendance;
+            window.checkAttendance = function() {
+                fetch('/attendance/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    alert(data.message);
+                    if(data.success) {
+                        location.reload(); // 대시보드이므로 새로고침하여 상태 반영
+                    }
+                });
+            }
+
+            // Prediction Fetch Logic
+            async function fetchLatestPrediction() {
+                try {
+                    const response = await fetch('/api/prediction/latest-question');
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    renderLatestPrediction(data);
+                } catch (error) {
+                    console.error('Failed to fetch prediction:', error);
+                }
+            }
+
+            function renderLatestPrediction(q) {
+                const section = document.getElementById('latest-prediction-section');
+                const title = document.getElementById('prediction-title');
+                const pool = document.getElementById('prediction-pool');
+                const optsContainer = document.getElementById('prediction-options');
+                const tag = document.getElementById('prediction-tag');
+                const resultBox = document.getElementById('prediction-result-msg');
+                const resultText = document.getElementById('result-text');
+
+                section.classList.remove('hidden');
+                title.textContent = q.title;
+                pool.textContent = q.totalPool.toLocaleString();
+
+                if (q.status === 'SETTLED') {
+                    tag.textContent = '정산 완료';
+                    tag.classList.remove('bg-blue-500/10', 'text-blue-500');
+                    tag.classList.add('bg-slate-800', 'text-slate-500');
+                    
+                    if (q.resultMessage) {
+                        resultBox.classList.remove('hidden');
+                        resultText.textContent = q.resultMessage;
+                    }
+                } else if (q.status === 'CLOSED') {
+                    tag.textContent = '결과 대기';
+                    tag.classList.remove('bg-blue-500/10', 'text-blue-500');
+                    tag.classList.add('bg-amber-500/10', 'text-amber-500', 'border-amber-500/20');
+                } else {
+                    tag.textContent = '참여 가능';
+                    tag.classList.remove('bg-slate-800', 'text-slate-500', 'bg-amber-500/10', 'text-amber-500');
+                    tag.classList.add('bg-blue-500/10', 'text-blue-500');
+                }
+
+                optsContainer.innerHTML = q.options.map(o => {
+                    const isWinner = o.isWinner === true;
+                    const ratio = q.totalPool > 0 ? ((o.optionPool / q.totalPool) * 100).toFixed(1) : 0;
+                    
+                    let bgClass = "bg-slate-950 border-slate-800";
+                    let textClass = "text-slate-400";
+                    let accentClass = "text-slate-600";
+                    
+                    if (q.status === 'SETTLED' && isWinner) {
+                        bgClass = "bg-blue-500/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.1)]";
+                        textClass = "text-blue-600 dark:text-white";
+                        accentClass = "text-blue-600 dark:text-blue-400";
+                    } else if (q.status === 'CLOSED') {
+                        bgClass = "border-slate-800 opacity-60";
+                        textClass = "text-slate-400";
+                        accentClass = "text-slate-600";
+                    } else if (q.status === 'OPEN') {
+                        bgClass = "hover:border-slate-600 cursor-pointer";
+                        textClass = "text-slate-600 dark:text-slate-200";
+                        accentClass = "text-blue-600 dark:text-blue-500";
+                    }
+                    
+                    const dynamicBg = q.status === 'OPEN' || q.status === 'CLOSED' ? 
+                        "background: var(--bg-surface-2); border-color: var(--border-base)" : "";
+
+                    return `
+                        <div class="flex flex-col gap-2">
+                            <div class="w-full p-4 rounded-2xl border flex justify-between items-center transition-all ${bgClass}" style="${dynamicBg}">
+                                <span class="font-bold text-sm ${textClass}">${o.content}</span>
+                                <div class="flex items-center gap-2">
+                                    ${isWinner ? '<span class="text-[9px] font-black bg-blue-500 text-white px-1.5 py-0.5 rounded uppercase tracking-tighter">WIN</span>' : ''}
+                                    <span class="text-[11px] font-black ${accentClass}">${ratio}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                fetchLatestPrediction();
+            });
+
+            /* ================= [신규] TP 내역 모달 로직 ================= */
+            function openTpModal() {
+                const tpModalOverlay = document.getElementById('tp-modal-overlay');
+                const tpModalContent = document.getElementById('tp-modal-content');
+                if (!tpModalOverlay) return;
+
+                tpModalOverlay.classList.remove('hidden');
+                requestAnimationFrame(() => {
+                    tpModalOverlay.classList.remove('opacity-0');
+                    tpModalContent.classList.remove('scale-95');
+                    tpModalContent.classList.add('scale-100');
+                });
+                fetchTpHistory();
+            }
+
+            function closeTpModal() {
+                const tpModalOverlay = document.getElementById('tp-modal-overlay');
+                const tpModalContent = document.getElementById('tp-modal-content');
+                if (!tpModalOverlay) return;
+
+                tpModalOverlay.classList.add('opacity-0');
+                tpModalContent.classList.remove('scale-100');
+                tpModalContent.classList.add('scale-95');
+                setTimeout(() => {
+                    tpModalOverlay.classList.add('hidden');
+                }, 300);
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const tpModalOverlay = document.getElementById('tp-modal-overlay');
+                if (tpModalOverlay) {
+                    tpModalOverlay.addEventListener('click', (e) => {
+                        if (e.target === tpModalOverlay) closeTpModal();
+                    });
+                }
+            });
+
+            async function fetchTpHistory() {
+                const container = document.getElementById('tp-history-container');
+                if (!container) return;
+                
+                try {
+                    const response = await fetch('/api/member/tp-history');
+                    if (!response.ok) throw new Error('Failed to fetch TP history');
+                    const data = await response.json();
+                    renderTpHistory(data);
+                } catch (error) {
+                    console.error(error);
+                    container.innerHTML = '<div class="text-center text-red-500 py-10 italic text-sm">내역을 불러오는 중 오류가 발생했습니다.</div>';
+                }
+            }
+
+            function renderTpHistory(history) {
+                const container = document.getElementById('tp-history-container');
+                if (!container) return;
+
+                if (!history || history.length === 0) {
+                    container.innerHTML = '<div class="text-center text-slate-500 py-10 italic text-sm">입출금 내역이 없습니다.</div>';
+                    return;
+                }
+
+                let html = '';
+                let lastDateStr = '';
+
+                history.forEach(item => {
+                    const date = new Date(item.createdAt);
+                    const yyyy = date.getFullYear();
+                    const mm = String(date.getMonth() + 1).padStart(2, '0');
+                    const dd = String(date.getDate()).padStart(2, '0');
+                    const currentDateHeader = `${yyyy}년 ${mm}월 ${dd}일`;
+
+                    if (currentDateHeader !== lastDateStr) {
+                        html += `
+                            <div class="flex items-center gap-4 py-4">
+                                <div class="flex-1 h-px bg-slate-800"></div>
+                                <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">${currentDateHeader}</span>
+                                <div class="flex-1 h-px bg-slate-800"></div>
+                            </div>
+                        `;
+                        lastDateStr = currentDateHeader;
+                    }
+
+                    const isPositive = item.amount > 0;
+                    const amountText = (isPositive ? '+' : '') + item.amount.toLocaleString();
+                    const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                    
+                    html += `
+                        <div class="bg-slate-950/50 p-4 rounded-2xl border border-slate-800 flex justify-between items-center group hover:border-slate-700 transition-all">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-slate-100 font-bold text-sm">${item.description}</span>
+                                <span class="text-slate-500 text-[10px] font-mono">${timeStr}</span>
+                            </div>
+                            <div class="text-right flex flex-col gap-1">
+                                <span class="font-black text-sm ${isPositive ? 'text-blue-500' : 'text-red-500'}">${amountText} TP</span>
+                                <span class="text-slate-600 text-[10px] font-bold uppercase tracking-tighter">Balance: ${item.balance.toLocaleString()}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                container.innerHTML = html;
+            }
+        </script>
+    </th:block>
+</div>

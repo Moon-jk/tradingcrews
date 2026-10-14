@@ -1,0 +1,835 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+    <head>
+        <title>소라고동</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Outfit:wght@300;400;700&display=swap');
+
+            :root {
+                --mystic-buy: #FF007A;
+                --mystic-sell: #00F0FF;
+                --mystic-ask: #A855F7;
+                --mystic-glow: rgba(0, 240, 255, 0.4);
+
+                /* Default Dark Theme Variables */
+                --mystic-bg-1: #0a1120;
+                --mystic-bg-2: #040810;
+                --mystic-card-bg: rgba(255, 255, 255, 0.03);
+                --mystic-card-border: rgba(255, 255, 255, 0.1);
+                --mystic-text: #ffffff;
+                --mystic-text-dim: rgba(255, 255, 255, 0.8);
+                --mystic-input-bg: rgba(0, 0, 0, 0.3);
+                --mystic-aurora-opacity: 0.4;
+            }
+
+            [data-theme="light"] {
+                --mystic-bg-1: #f1f5f9;
+                --mystic-bg-2: #e2e8f0;
+                --mystic-card-bg: rgba(255, 255, 255, 0.7);
+                --mystic-card-border: rgba(148, 163, 184, 0.3);
+                --mystic-text: #0f172a;
+                --mystic-text-dim: #334155;
+                --mystic-input-bg: rgba(255, 255, 255, 0.9);
+                --mystic-aurora-opacity: 0.2;
+                --mystic-glow: rgba(2, 166, 200, 0.2);
+            }
+
+            .mystic-container {
+                min-height: calc(100vh - 64px);
+                /* Header height adjustment */
+                background: radial-gradient(circle at 50% 50%, var(--mystic-bg-1) 0%, var(--mystic-bg-2) 100%);
+                position: relative;
+                transition: background 0.5s ease;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                padding: 20px;
+            }
+
+            /* 동적 오로라 배경 */
+            .mystic-bg {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 0;
+                opacity: var(--mystic-aurora-opacity);
+                filter: blur(120px);
+                pointer-events: none;
+                transition: opacity 0.5s ease;
+            }
+
+            .aurora {
+                position: absolute;
+                width: 600px;
+                height: 600px;
+                border-radius: 50%;
+                background: linear-gradient(45deg, var(--mystic-buy), var(--mystic-sell));
+                animation: float 20s infinite alternate;
+            }
+
+            @keyframes float {
+                0% {
+                    transform: translate(-10%, -10%) rotate(0deg);
+                }
+
+                100% {
+                    transform: translate(20%, 20%) rotate(360deg);
+                }
+            }
+
+            .glass-mystic {
+                background: var(--mystic-card-bg);
+                backdrop-filter: blur(25px);
+                border: 1px solid var(--mystic-card-border);
+                border-radius: 40px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+                position: relative;
+                z-index: 10;
+                width: 100%;
+                max-width: 1200px;
+                padding: 40px;
+                transition: border-color 0.5s, box-shadow 0.5s;
+            }
+
+            .glass-mystic.buy {
+                border-color: var(--mystic-buy);
+                box-shadow: 0 0 40px rgba(255, 0, 122, 0.2);
+            }
+
+            .glass-mystic.sell {
+                border-color: var(--mystic-sell);
+                box-shadow: 0 0 40px rgba(0, 240, 255, 0.2);
+            }
+
+            .glass-mystic.ask {
+                border-color: var(--mystic-ask);
+                box-shadow: 0 0 40px rgba(168, 85, 247, 0.2);
+            }
+
+            .mystic-title {
+                font-family: 'Cinzel', serif;
+                font-size: 1.8rem;
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-image: linear-gradient(to right, var(--mystic-buy), var(--mystic-sell));
+                margin-bottom: 30px;
+                letter-spacing: 2px;
+                color: var(--mystic-text);
+                /* Fallback */
+            }
+
+            .conch-wrapper {
+                position: relative;
+                margin: 40px auto;
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                width: 280px;
+                height: 280px;
+            }
+
+            #conch-img {
+                font-size: 160px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 5;
+                transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+                filter: drop-shadow(0 0 30px var(--mystic-glow));
+                animation: gentle-float 4s infinite ease-in-out;
+                user-select: none;
+            }
+
+            @keyframes gentle-float {
+
+                0%,
+                100% {
+                    transform: translateY(0) rotate(0deg);
+                }
+
+                50% {
+                    transform: translateY(-15px) rotate(5deg);
+                }
+            }
+
+            .pop-landing {
+                animation: pop-bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            }
+
+            @keyframes pop-bounce {
+                0% {
+                    transform: scale(0.3);
+                    filter: blur(5px) drop-shadow(0 0 100px var(--mystic-glow));
+                }
+
+                50% {
+                    transform: scale(1.3);
+                    filter: blur(0px) drop-shadow(0 0 80px var(--mystic-glow));
+                }
+
+                100% {
+                    transform: scale(1) rotate(0deg);
+                    filter: drop-shadow(0 0 30px var(--mystic-glow));
+                }
+            }
+
+            .conch-wrapper:hover #conch-img {
+                filter: drop-shadow(0 0 50px var(--mystic-glow));
+            }
+
+            /* 줄 당기기 오버레이 SVG */
+            #magic-string-svg {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 4;
+                pointer-events: none;
+                overflow: visible;
+                filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            }
+
+            #pull-handle {
+                position: absolute;
+                top: 15%;
+                left: 85%;
+                transform: translate(-50%, -50%);
+                width: 30px;
+                height: 30px;
+                border: 5px solid #f8fafc; /* 물리적인 플라스틱/은색 링 메타포 */
+                border-radius: 50%;
+                z-index: 6;
+                cursor: grab;
+                background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.05) 100%);
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.5);
+                backdrop-filter: blur(4px);
+                transition: box-shadow 0.3s, border-color 0.3s, transform 0.1s, width 0.2s, height 0.2s;
+            }
+
+            /* 도움말 툴팁 */
+            #pull-helper {
+                position: absolute;
+                right: 140%;
+                top: 50%;
+                transform: translateY(-50%);
+                white-space: nowrap;
+                font-size: 0.75rem;
+                font-weight: 800;
+                color: white;
+                background: var(--mystic-ask);
+                padding: 6px 12px;
+                border-radius: 12px;
+                pointer-events: none;
+                transition: opacity 0.3s ease;
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+                animation: bounce-helper 1.5s infinite alternate ease-in-out;
+            }
+
+            #pull-helper::after {
+                content: '';
+                position: absolute;
+                right: -4px;
+                top: 50%;
+                transform: translateY(-50%);
+                border-width: 5px 0 5px 5px;
+                border-style: solid;
+                border-color: transparent transparent transparent var(--mystic-ask);
+            }
+
+            @keyframes bounce-helper {
+                0% {
+                    transform: translateY(-50%) translateX(0);
+                }
+
+                100% {
+                    transform: translateY(-50%) translateX(-4px);
+                }
+            }
+
+            #pull-handle.is-dragging #pull-helper {
+                opacity: 0;
+            }
+
+            #pull-handle:active {
+                cursor: grabbing;
+                background: rgba(255, 255, 255, 0.2);
+                transform: translate(-50%, -50%) scale(0.95);
+            }
+
+            #pull-handle.ready {
+                border-color: #fff;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), 0 0 25px var(--mystic-glow);
+                width: 36px;
+                height: 36px;
+                animation: handle-pulse 0.4s infinite alternate;
+            }
+
+            @keyframes handle-pulse {
+                0% {
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), 0 0 15px var(--mystic-glow);
+                    border-width: 5px;
+                }
+
+                100% {
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.6), 0 0 40px var(--mystic-glow);
+                    border-width: 7px;
+                }
+            }
+
+            .snap-back {
+                transition: d 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+
+            .handle-snap-back {
+                transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+            }
+
+            /* 입력창 스타일 */
+            .mystic-field {
+                background: var(--mystic-input-bg);
+                border: 1px solid var(--mystic-card-border);
+                border-radius: 20px;
+                padding: 15px 25px;
+                color: var(--mystic-text);
+                font-family: 'Outfit', sans-serif;
+                width: 100%;
+                text-align: center;
+                margin-bottom: 20px;
+                outline: none;
+                transition: all 0.3s;
+            }
+
+            .mystic-field:focus {
+                border-color: rgba(255, 255, 255, 0.4);
+                background: rgba(0, 0, 0, 0.5);
+            }
+
+            /* 매수/매도 스위치 */
+            .mystic-switch {
+                display: flex;
+                background: var(--mystic-input-bg);
+                padding: 5px;
+                border-radius: 25px;
+                margin-bottom: 30px;
+                border: 1px solid var(--mystic-card-border);
+            }
+
+            .switch-btn {
+                flex: 1;
+                padding: 12px;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: 800;
+                color: var(--mystic-text-dim);
+                opacity: 0.6;
+                transition: all 0.4s;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+
+            .switch-btn.active {
+                opacity: 1;
+            }
+
+            .switch-btn.active[data-mode="BUY"] {
+                background: var(--mystic-buy);
+                color: white;
+                box-shadow: 0 5px 15px rgba(255, 0, 122, 0.4);
+            }
+
+            .switch-btn.active[data-mode="SELL"] {
+                background: var(--mystic-sell);
+                color: #040810;
+                box-shadow: 0 5px 15px rgba(0, 240, 255, 0.4);
+            }
+
+            .switch-btn.active[data-mode="ASK"] {
+                background: var(--mystic-ask);
+                color: white;
+                box-shadow: 0 5px 15px rgba(168, 85, 247, 0.4);
+            }
+
+            #advice-container {
+                min-height: 80px;
+                margin-top: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+            }
+
+            #advice-text {
+                font-family: 'Outfit', sans-serif;
+                font-size: 1.1rem;
+                line-height: 1.6;
+                color: var(--mystic-text-dim);
+                opacity: 0;
+                transform: translateY(20px);
+                transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+            }
+
+            #advice-text.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            /* 로딩 원돌이 (센터 배치) */
+            .mystic-loader {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                width: 240px;
+                height: 240px;
+                border: 4px solid transparent;
+                border-top-color: var(--mystic-glow);
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                display: none;
+                z-index: 2;
+                box-shadow: 0 0 50px var(--mystic-glow);
+            }
+
+            @keyframes spin {
+                from {
+                    transform: translate(-50%, -50%) rotate(0deg);
+                }
+
+                to {
+                    transform: translate(-50%, -50%) rotate(360deg);
+                }
+            }
+
+            .market-brief {
+                margin-top: 40px;
+                font-size: 0.75rem;
+                color: var(--mystic-text-dim);
+                font-weight: 700;
+                letter-spacing: 1px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                opacity: 0.8;
+            }
+
+            .sentiment-dot {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: #94a3b8;
+                box-shadow: 0 0 10px #94a3b8;
+            }
+
+            .sentiment-dot.positive {
+                background: #22c55e;
+                box-shadow: 0 0 10px #22c55e;
+            }
+
+            .sentiment-dot.negative {
+                background: #ef4444;
+                box-shadow: 0 0 10px #ef4444;
+            }
+
+            .shaking {
+                animation: shake 0.5s infinite;
+            }
+
+            @keyframes shake {
+                0% {
+                    transform: translate(1px, 1px) rotate(0deg);
+                }
+
+                10% {
+                    transform: translate(-1px, -2px) rotate(-1deg);
+                }
+
+                20% {
+                    transform: translate(-3px, 0px) rotate(1deg);
+                }
+
+                30% {
+                    transform: translate(3px, 2px) rotate(0deg);
+                }
+
+                40% {
+                    transform: translate(1px, -1px) rotate(1deg);
+                }
+
+                50% {
+                    transform: translate(-1px, 2px) rotate(-1deg);
+                }
+
+                60% {
+                    transform: translate(-3px, 1px) rotate(0deg);
+                }
+
+                70% {
+                    transform: translate(3px, 1px) rotate(-1deg);
+                }
+
+                80% {
+                    transform: translate(-1px, -1px) rotate(1deg);
+                }
+
+                90% {
+                    transform: translate(1px, 2px) rotate(0deg);
+                }
+
+                100% {
+                    transform: translate(1px, -2px) rotate(-1deg);
+                }
+            }
+
+            /* Responsive Adjustments */
+            @media (max-width: 640px) {
+                .mystic-container {
+                    padding: 15px;
+                }
+
+                .glass-mystic {
+                    padding: 30px 20px;
+                    border-radius: 30px;
+                    max-width: 100%;
+                }
+
+                #conch-img {
+                    font-size: 120px;
+                }
+
+                .conch-wrapper {
+                    width: 200px;
+                    height: 200px;
+                }
+
+                .mystic-title {
+                    font-size: 1.4rem;
+                }
+
+                .mystic-field {
+                    padding: 12px 20px;
+                    font-size: 0.9rem;
+                }
+            }
+        </style>
+    </head>
+
+    <span layout:fragment="page-title">마법의 소라고동</span>
+
+    <div layout:fragment="content">
+        <div class="mystic-container">
+            <div class="mystic-bg">
+                <div class="aurora"></div>
+            </div>
+
+            <div id="mystic-card" class="glass-mystic buy">
+                <h2 class="mystic-title"><b>마법의 소라고동</b></h2>
+
+                <div class="mystic-switch">
+                    <button class="switch-btn active" data-mode="BUY" onclick="setMode('BUY')">BUY</button>
+                    <button class="switch-btn" data-mode="ASK" onclick="setMode('ASK')">ASK</button>
+                    <button class="switch-btn" data-mode="SELL" onclick="setMode('SELL')">SELL</button>
+                </div>
+
+                <div class="space-y-4">
+                    <input type="text" id="symbol-input" class="mystic-field" placeholder="종목 코드 (예: TSLA)"
+                        maxlength="10">
+                </div>
+
+                <div class="conch-wrapper">
+                    <div id="mystic-loader" class="mystic-loader"></div>
+                    <div id="conch-img" role="img" aria-label="Magic Conch">🐚</div>
+                    <svg id="magic-string-svg" class="snap-back">
+                        <path id="magic-string-path" d="" fill="transparent" stroke="rgba(255,255,255,0.7)"
+                            stroke-width="2.5"></path>
+                    </svg>
+                    <div id="pull-handle" class="handle-snap-back" role="button" tabindex="0" aria-label="줄 당기기"
+                        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); askConch();}">
+                        <div id="pull-helper" style="letter-spacing: 1px;">당겨보세요</div>
+                    </div>
+                </div>
+
+                <div id="advice-container">
+                    <p id="advice-text">심해의 소리에 귀를 기울이거라...</p>
+                </div>
+
+                <div class="market-brief" th:if="${marketSentiment != null}">
+                    <div class="sentiment-dot"
+                        th:classappend="${marketSentiment.status == 'POSITIVE' ? 'positive' : (marketSentiment.status == 'NEGATIVE' ? 'negative' : '')}">
+                    </div>
+                    <span>CURRENT MARKET: [[${marketSentiment.status}]]</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script th:inline="javascript">
+    let currentMode = 'BUY';
+    let isAsking = false;
+
+    function setMode(mode) {
+        if (isAsking) return;
+        currentMode = mode;
+        const card = document.getElementById('mystic-card');
+        card.className = 'glass-mystic ' + mode.toLowerCase();
+
+        document.querySelectorAll('.switch-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        const input = document.getElementById('symbol-input');
+        if (mode === 'ASK') {
+            input.placeholder = '심해의 소라고동에게 무엇이든 물어보거라...';
+            input.maxLength = 200;
+        } else {
+            input.placeholder = mode === 'BUY' ? '어떤 보석을 사려 하느냐?' : '무엇을 떠나보내려 하느냐?';
+            input.maxLength = 10;
+        }
+    }
+
+    let shakeTimer = null;
+    let loaderTimer = null;
+    let emojiInterval = null;
+
+    async function askConch() {
+        if (isAsking) return;
+
+        const img = document.getElementById('conch-img');
+        const text = document.getElementById('advice-text');
+        const loader = document.getElementById('mystic-loader');
+        const symbol = document.getElementById('symbol-input').value;
+
+        isAsking = true;
+        img.classList.add('shaking');
+        img.classList.remove('pop-landing');
+        text.classList.remove('show');
+
+        if (shakeTimer) clearTimeout(shakeTimer);
+        if (loaderTimer) clearTimeout(loaderTimer);
+        if (emojiInterval) clearInterval(emojiInterval);
+
+        // 로딩 이모지 순환
+        const loadingEmojis = ['🌊', '💫', '🔮', '✨', '🌀'];
+        let emojiIdx = 0;
+        emojiInterval = setInterval(() => {
+            img.innerText = loadingEmojis[emojiIdx];
+            emojiIdx = (emojiIdx + 1) % loadingEmojis.length;
+        }, 150);
+
+        // 지연 시간 후 로딩 노출 (유저 요청으로 원 뱅글뱅글 도는 로더 임시 비활성화)
+        // loaderTimer = setTimeout(() => {
+        //     if (isAsking) loader.style.display = 'block';
+        // }, 500);
+
+        try {
+            const params = new URLSearchParams();
+            params.append('symbol', symbol);
+            params.append('mode', currentMode);
+
+            const response = await fetch('/api/v1/magical/consult', {
+                method: 'POST',
+                body: params
+            });
+
+            if (!response.ok) {
+                throw new Error('Server error: ' + response.status);
+            }
+
+            const data = await response.json();
+
+            // 최소 흔들림 시간 보장 (1.5초)
+            shakeTimer = setTimeout(() => {
+                clearInterval(emojiInterval);
+                img.classList.remove('shaking');
+
+                // 결과 이모지로 팡!
+                if (currentMode === 'BUY') img.innerText = '💎';
+                else if (currentMode === 'SELL') img.innerText = '💸';
+                else img.innerText = '🔮';
+
+                img.classList.add('pop-landing');
+
+                loader.style.display = 'none';
+                text.innerText = data.advice || "소라고동이 침묵하고 있구나...";
+                text.classList.add('show');
+                isAsking = false;
+            }, 1000);
+
+        } catch (error) {
+            console.error(error);
+            shakeTimer = setTimeout(() => {
+                clearInterval(emojiInterval);
+                img.innerText = '🐚'; // 에러 시 원래 소라고동 복구
+                img.classList.remove('shaking');
+                loader.style.display = 'none';
+                text.innerText = "심해의 기류가 어지럽구나... 다시 물어보아라. (통신 오류)";
+                text.classList.add('show');
+                isAsking = false;
+            }, 1000);
+        }
+    }
+
+    // 줄 당기기 (Pull String) 드래그 로직 (1시~2시 방향)
+    const handle = document.getElementById('pull-handle');
+    const path = document.getElementById('magic-string-path');
+    const wrapper = document.querySelector('.conch-wrapper');
+    const helper = document.getElementById('pull-helper');
+
+    let startX = 0, startY = 0;
+    let isDragging = false;
+    let rect, originX, originY, baseX, baseY;
+
+    const maxPull = 120; // 저항 한계 거리
+    const threshold = 80; // 발동(Ready) 임계치
+
+    // 경로 초기화 및 리사이즈 대응
+    function initStringPath() {
+        if (!wrapper) return;
+        let r = wrapper.getBoundingClientRect();
+        if (r.width === 0) return;
+        // 원점: 껍데기 중앙 쯤에서 묶여있도록 (조금 전진)
+        let oX = r.width * 0.65;
+        let oY = r.height * 0.40;
+        // 고리 초기 위치: 1~2시 방향 모서리
+        let bX = r.width * 0.85;
+        let bY = r.height * 0.15;
+        
+        // 초기 중력 처짐(Gravity Sag) 35px
+        path.setAttribute('d', `M ${oX} ${oY} Q ${oX + (bX - oX) / 2} ${oY + (bY - oY) / 2 + 35}, ${bX} ${bY}`);
+    }
+
+    window.addEventListener('load', initStringPath);
+    window.addEventListener('resize', initStringPath);
+    // 첫 로드 보정
+    setTimeout(initStringPath, 100);
+
+    const handleTouchMove = (e) => {
+        if (isDragging) e.preventDefault();
+        drag(e);
+    };
+
+    function startDrag(e) {
+        if (isAsking) return;
+        isDragging = true;
+
+        // 드래그 시작 시 소라고동으로 원복
+        const img = document.getElementById('conch-img');
+        img.innerText = '🐚';
+        img.classList.remove('pop-landing');
+
+        rect = wrapper.getBoundingClientRect();
+        originX = rect.width * 0.65;
+        originY = rect.height * 0.40;
+        baseX = rect.width * 0.85;
+        baseY = rect.height * 0.15;
+
+        startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        startY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+        handle.classList.remove('handle-snap-back');
+        handle.classList.remove('ready');
+        path.classList.remove('snap-back');
+        handle.classList.add('is-dragging');
+
+        if (e.type.includes('mouse')) {
+            e.preventDefault();
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+        } else if (e.type.includes('touch')) {
+            document.addEventListener('touchmove', handleTouchMove, { passive: false });
+            document.addEventListener('touchend', endDrag);
+        }
+    }
+
+    function drag(e) {
+        if (!isDragging || isAsking) return;
+        const x = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+        const y = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+
+        let dx = x - startX;
+        let dy = y - startY;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+
+        // 저항감 (Elastic resistance)
+        if (dist > maxPull) {
+            let scale = maxPull / dist + (1 - maxPull / dist) * 0.15;
+            dx *= scale;
+            dy *= scale;
+        }
+
+        let finalX = baseX + dx;
+        let finalY = baseY + dy;
+
+        // 원점(소라고동 안쪽)으로부터의 현재 거리를 계산하여 바깥으로 당겼을 때만 발동되도록 함
+        // 이를 통해 11시~4시 어느 방향이든 바깥으로 당겨지기만 하면 트리거됨
+        let currentDistFromOrigin = Math.sqrt((finalX - originX) ** 2 + (finalY - originY) ** 2);
+        let baseDistFromOrigin = Math.sqrt((baseX - originX) ** 2 + (baseY - originY) ** 2);
+        let pullAmount = currentDistFromOrigin - baseDistFromOrigin;
+
+        if (pullAmount > threshold) {
+            handle.classList.add('ready');
+        } else {
+            handle.classList.remove('ready');
+        }
+
+        // 핸들 위치 이동
+        handle.style.left = `${finalX}px`;
+        handle.style.top = `${finalY}px`;
+
+        // 물리 법칙 기반 중력 처짐 (Gravity Sag)
+        // 안 당겼을 땐 느슨하게 35px 처지고, 팽팽해지면 딱 일직선이 됨 (0px)
+        let tensionRatio = pullAmount / threshold;
+        if (tensionRatio < 0) tensionRatio = 0;
+        if (tensionRatio > 1) tensionRatio = 1;
+        let sag = 35 * (1 - tensionRatio);
+
+        let cpX = originX + (finalX - originX) / 2;
+        let cpY = originY + (finalY - originY) / 2 + sag;
+        path.setAttribute('d', `M ${originX} ${originY} Q ${cpX} ${cpY}, ${finalX} ${finalY}`);
+    }
+
+    function endDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', endDrag);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', endDrag);
+
+        // 복귀 트랜지션
+        handle.classList.add('handle-snap-back');
+        path.classList.add('snap-back');
+
+        handle.style.left = `85%`;
+        handle.style.top = `15%`;
+
+        initStringPath();
+
+        handle.classList.remove('is-dragging');
+        let wasReady = handle.classList.contains('ready');
+        handle.classList.remove('ready');
+
+        if (wasReady && !isAsking) {
+            askConch();
+            if (helper) helper.style.display = 'none'; // 성공적으로 사용하면 말풍선 완전 영구 제거
+        }
+    }
+
+    // 초기 마우스 & 터치 드래그 시작 이벤트만 핸들에 할당
+    handle.addEventListener('mousedown', startDrag);
+    handle.addEventListener('touchstart', startDrag, { passive: false });
+    // 엔터키 지원 (접근성 유지)
+    document.getElementById('symbol-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') askConch();
+    });
+</script>

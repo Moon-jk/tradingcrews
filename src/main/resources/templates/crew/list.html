@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+<head>
+    <title>트레이딩 크루 | TradingCrews:트루</title>
+</head>
+
+<span layout:fragment="page-title">내 유닛 대시보드</span>
+
+<div layout:fragment="content" class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    
+    <!-- Flash Messages -->
+    <div th:if="${errorMessage}" class="p-4 mb-8 rounded-2xl font-bold bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-current shadow-sm animate-pulse" th:text="${errorMessage}"></div>
+    <div th:if="${successMessage}" class="p-4 mb-8 rounded-2xl font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-current shadow-sm" th:text="${successMessage}"></div>
+
+    <!-- Header -->
+    <div class="mb-10 lg:mb-14 text-slate-900 dark:text-white transition-colors duration-300">
+        <h1 class="text-3xl md:text-5xl font-black mb-3 tracking-tight">🛡️ Trading Crew</h1>
+        <p class="text-sm md:text-base font-medium text-slate-500 dark:text-slate-400">최대 7인의 정예 협업 공간. 당신의 전술을 증명하세요.</p>
+    </div>
+
+    <!-- Tab Navigation (A안: 둥근 알약 모던 형태) -->
+    <div class="flex items-center gap-1.5 p-1.5 rounded-full mb-12 sm:mb-16 w-fit bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 backdrop-blur-md shadow-inner transition-colors duration-300">
+        <a href="/crew" class="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-black transition-all bg-electric text-white shadow-lg shadow-electric/30 pointer-events-none">
+            <span>🏠</span> My Dashboard
+        </a>
+        <a href="/crew/explore" class="flex items-center gap-2 px-6 py-3 rounded-full text-sm font-black transition-all text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5">
+            <span>🚀</span> Explore Units
+        </a>
+    </div>
+
+    <!-- 심사 중인 크루 (Pending Applications) -->
+    <div th:if="${!pendingApplications.isEmpty()}" class="mb-16 md:mb-20">
+        <h2 class="text-xs font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-3 text-amber-500 dark:text-amber-400">
+            <span class="animate-pulse">⏳</span> Pending Applications
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            <a th:each="app : ${pendingApplications}" th:href="@{|/crew/${app.crew.id}|}" 
+               class="group relative flex flex-col gap-6 p-6 lg:p-8 rounded-3xl transition-all duration-500 hover:-translate-y-2 border shadow-sm hover:shadow-2xl overflow-hidden
+                      bg-gradient-to-br from-white to-amber-50/30 dark:from-navy-900/60 dark:to-amber-900/10 
+                      border-amber-200 dark:border-amber-500/20 hover:border-amber-400 dark:hover:border-amber-400/50">
+                
+                <!-- Background ambient glow -->
+                <div class="absolute inset-0 bg-radial-[at_50%_0%] from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
+
+                <!-- Card Header -->
+                <div class="flex justify-between items-start z-10">
+                    <h3 class="text-xl md:text-2xl font-black leading-tight text-slate-800 dark:text-slate-100 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors" th:text="${app.crew.name}">크루 이름</h3>
+                    <div class="text-[10px] font-black uppercase px-2.5 py-1 rounded-md border 
+                                bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20">
+                        Leader: <span th:text="${app.crew.leader?.nickname}">리더</span>
+                    </div>
+                </div>
+                
+                <!-- Description -->
+                <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[2.75rem] z-10" th:text="${app.crew.description}">설명</p>
+
+                <!-- Stats Box -->
+                <div class="flex flex-col gap-4 p-5 rounded-2xl border transition-colors z-10
+                            bg-slate-50/80 dark:bg-navy-950/50 border-slate-200/60 dark:border-white/5">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Initial</span>
+                        <span class="text-base font-black text-slate-700 dark:text-slate-200 font-mono crew-stat-initial" th:data-crew-id="${app.crew.id}">
+                            <span class="inline-block w-20 h-5 bg-slate-200 dark:bg-white/10 animate-pulse rounded-md align-middle"></span>
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">PNL / Rate</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-base font-black text-slate-700 dark:text-slate-200 font-mono crew-stat-profit" th:data-crew-id="${app.crew.id}">
+                                <span class="inline-block w-24 h-5 bg-slate-200 dark:bg-white/10 animate-pulse rounded-md align-middle"></span>
+                            </span>
+                            <span class="text-xs font-black px-2 py-0.5 rounded-lg bg-slate-200/50 dark:bg-white/5 text-slate-500 crew-stat-rate" th:data-crew-id="${app.crew.id}">0.00%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="flex justify-between items-center mt-auto pt-4 border-t border-amber-100 dark:border-white/5 z-10">
+                    <span class="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg
+                                 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5">
+                        Role: <span th:text="${app.requestedRole.description}">역할</span>
+                    </span>
+                    <span class="text-[11px] font-black tracking-tighter text-amber-500 dark:text-amber-400 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                        Checking Status <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                    </span>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 내 크루 (Active Deployments) -->
+    <h2 class="text-xs font-black uppercase tracking-[0.2em] mb-6 flex items-center gap-3 text-electric">
+        <span class="w-2 h-2 rounded-full bg-electric shadow-[0_0_8px_var(--accent-glow)]"></span> 
+        Active Deployments
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8" th:if="${!myCrews.isEmpty()}">
+        <a th:each="c : ${myCrews}" th:href="@{|/crew/${c.id}|}" 
+           class="group relative flex flex-col gap-6 p-6 lg:p-8 rounded-3xl transition-all duration-500 hover:-translate-y-2 border shadow-sm hover:shadow-2xl hover:shadow-electric/10 overflow-hidden
+                  bg-white dark:bg-navy-900/60 border-slate-200 dark:border-white/10 hover:border-electric/50 dark:hover:border-electric/50">
+            
+            <!-- Mouse dynamic glow (simulated with CSS hover radial) -->
+            <div class="absolute inset-0 bg-radial-[at_50%_0%] from-electric/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0"></div>
+
+            <!-- Card Header -->
+            <div class="flex justify-between items-start z-10">
+                <h3 class="text-xl md:text-2xl font-black leading-tight text-slate-900 dark:text-white transition-colors group-hover:text-electric" th:text="${c.name}">크루 이름</h3>
+                <div class="text-[10px] font-black uppercase px-2.5 py-1 rounded-md border shrink-0
+                            bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-500/20">
+                    Leader: <span th:text="${c.leader?.nickname}">리더</span>
+                </div>
+            </div>
+            
+            <!-- Description -->
+            <p class="text-sm leading-relaxed text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[2.75rem] z-10" th:text="${c.description}">설명</p>
+
+            <!-- Stats Box -->
+            <div class="flex flex-col gap-4 p-5 rounded-2xl border transition-colors z-10
+                        bg-slate-50/80 dark:bg-navy-950/50 border-slate-200/60 dark:border-white/5">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">Initial</span>
+                    <span class="text-base font-black font-mono text-slate-700 dark:text-slate-200 crew-stat-initial" th:data-crew-id="${c.id}">
+                        <span class="inline-block w-20 h-5 bg-slate-200 dark:bg-white/10 animate-pulse rounded-md align-middle"></span>
+                    </span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">PNL / Rate</span>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-base font-black font-mono text-slate-700 dark:text-slate-200 crew-stat-profit" th:data-crew-id="${c.id}">
+                            <span class="inline-block w-24 h-5 bg-slate-200 dark:bg-white/10 animate-pulse rounded-md align-middle"></span>
+                        </span>
+                        <span class="text-xs font-black px-2 py-0.5 rounded-lg bg-slate-200/50 dark:bg-white/5 text-slate-500 crew-stat-rate" th:data-crew-id="${c.id}">0.00%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-between items-center mt-auto pt-4 border-t border-slate-100 dark:border-white/5 z-10 transition-colors">
+                <span class="text-[11px] font-black tracking-widest px-3.5 py-1.5 rounded-full border border-electric/20 bg-electric/5 text-electric shadow-inner">
+                    Units <span th:text="${c.memberCount}"></span> 
+                    <span class="opacity-50">/ 7</span>
+                </span>
+                
+                <div class="flex gap-2 items-center">
+                    <span th:if="${isLeaderMap.get(c.id) and pendingAppCounts.get(c.id) > 0}" 
+                          class="text-[10px] font-black px-2.5 py-1 rounded-full uppercase bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30">
+                        NEW <span th:text="${pendingAppCounts.get(c.id)}"></span>
+                    </span>
+                    <span class="text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg border"
+                          th:classappend="${c.requireApproval ? 'text-amber-600 dark:text-amber-500 border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10' : 'text-emerald-600 dark:text-emerald-500 border-emerald-200 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10'}"
+                          th:text="${c.requireApproval ? 'APPROVAL REQ' : 'AUTO JOIN'}">상태</span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Empty State -->
+    <div th:if="${myCrews.isEmpty()}" class="py-24 md:py-32 flex flex-col justify-center items-center rounded-3xl border-2 border-dashed border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-navy-950/20">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 text-slate-300 dark:text-slate-600 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+        </svg>
+        <p class="text-sm font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">No Active Units Found.</p>
+    </div>
+
+    <!-- Create Button Container -->
+    <div class="mt-20 lg:mt-28 mb-32 flex flex-col items-center">
+        <button type="button" class="auth-required flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-5 rounded-2xl text-white font-black bg-electric hover:bg-electric-600 transition-all text-sm uppercase tracking-[0.15em] shadow-[0_15px_30px_rgba(2,166,200,0.3)] hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(2,166,200,0.4)] active:translate-y-0"
+                onclick="openModal()">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            INITIALIZE NEW CREW
+        </button>
+        <p class="mt-8 text-xs font-medium text-slate-500 dark:text-slate-400 italic">작전의 성패는 단단한 결속에서 시작됩니다.</p>
+    </div>
+
+    <!-- Modal (100% Tailwind) -->
+    <div id="crewModal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4 sm:p-6 opacity-0 transition-opacity duration-300">
+        <!-- Overlay -->
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        
+        <!-- Modal Content -->
+        <div class="relative w-full max-w-lg bg-white dark:bg-navy-900 border border-slate-200 dark:border-white/10 rounded-3xl p-8 sm:p-10 shadow-2xl transition-transform duration-500 translate-y-10 scale-95" id="crewModalContent">
+            
+            <button class="absolute top-6 right-6 p-2 rounded-xl bg-slate-100 dark:bg-navy-950 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all transform hover:rotate-90 hover:scale-110 border border-transparent dark:border-white/5" onclick="closeModal()">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path d="M6 18L18 6M6 6l12 12" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </button>
+
+            <div class="text-center mb-10">
+                <h3 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white mb-2 uppercase">Initialize Unit</h3>
+                <p class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">창설자는 즉시 리더로 임명되어 유닛을 관리합니다.</p>
+            </div>
+
+            <form th:action="@{/crew/create}" method="post" class="space-y-6">
+                <!-- Crew Name -->
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <label for="crewName" class="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Crew Designation</label>
+                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Max 20 chars</span>
+                    </div>
+                    <input type="text" id="crewName" name="name" required maxlength="20"
+                           placeholder="e.g. [나스닥] 개미털기 방어 사령부"
+                           class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-5 py-4 rounded-2xl text-sm font-medium placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-electric/50 focus:border-electric/50 transition-all shadow-inner">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <label for="crewDesc" class="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Operational Rules</label>
+                        <span class="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Max 150 chars</span>
+                    </div>
+                    <textarea id="crewDesc" name="description" rows="4" maxlength="150"
+                              placeholder="작전 목표와 매매 원칙을 기술하세요."
+                              class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white px-5 py-4 rounded-2xl text-sm font-medium placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-electric/50 focus:border-electric/50 transition-all shadow-inner resize-none"></textarea>
+                </div>
+
+                <!-- Protocol -->
+                <div>
+                    <span class="block text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">Deployment Protocol</span>
+                    <div class="flex gap-4">
+                        <label class="cursor-pointer group flex-1">
+                            <input type="radio" name="requireApproval" value="false" checked class="hidden peer">
+                            <div class="p-4 rounded-2xl border text-center transition-all shadow-sm
+                                        peer-checked:bg-electric peer-checked:text-white peer-checked:border-electric peer-checked:shadow-electric/30
+                                        bg-slate-50 dark:bg-navy-950 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400
+                                        hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-300 dark:hover:border-white/20">
+                                <span class="text-xs font-black uppercase tracking-widest">Auto Join</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer group flex-1">
+                            <input type="radio" name="requireApproval" value="true" class="hidden peer">
+                            <div class="p-4 rounded-2xl border text-center transition-all shadow-sm
+                                        peer-checked:bg-electric peer-checked:text-white peer-checked:border-electric peer-checked:shadow-electric/30
+                                        bg-slate-50 dark:bg-navy-950 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400
+                                        hover:bg-slate-100 dark:hover:bg-white/5 hover:border-slate-300 dark:hover:border-white/20">
+                                <span class="text-xs font-black uppercase tracking-widest">Review Req</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full px-6 py-4 rounded-2xl text-white font-black bg-electric hover:bg-electric-600 transition-all text-sm uppercase tracking-[0.15em] shadow-xl hover:-translate-y-1 hover:shadow-electric/40 active:translate-y-0">
+                        CONFIRM DEPLOYMENT
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<th:block layout:fragment="script">
+    <script>
+        function openModal() {
+            const modal = document.getElementById('crewModal');
+            const content = document.getElementById('crewModalContent');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Allow display change to process before applying transition
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.classList.add('opacity-100');
+                content.classList.remove('translate-y-10', 'scale-95');
+                content.classList.add('translate-y-0', 'scale-100');
+                document.getElementById('crewName').focus();
+            }, 10);
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('crewModal');
+            const content = document.getElementById('crewModalContent');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            content.classList.remove('translate-y-0', 'scale-100');
+            content.classList.add('translate-y-10', 'scale-95');
+            // Wait for transition to finish
+            setTimeout(() => {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }, 300);
+            document.body.style.overflow = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const crewIdElements = document.querySelectorAll('[data-crew-id]');
+            const idList = Array.from(new Set(Array.from(crewIdElements).map(el => el.getAttribute('data-crew-id'))));
+            const uniqueIds = idList.join(',');
+
+            if (uniqueIds.length > 0) {
+                console.log("Fetching bulk stats for crewIds:", uniqueIds);
+                fetch(`/api/crew/stats/bulk?crewIds=${uniqueIds}`)
+                    .then(res => {
+                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                        return res.json();
+                    })
+                    .then(res => {
+                        if (res.success && res.data) {
+                            Object.keys(res.data).forEach(crewId => {
+                                const stat = res.data[crewId];
+                                document.querySelectorAll(`.crew-stat-initial[data-crew-id="${crewId}"]`).forEach(el => el.innerHTML = stat.initial);
+                                document.querySelectorAll(`.crew-stat-profit[data-crew-id="${crewId}"]`).forEach(el => el.innerHTML = stat.profit);
+                                document.querySelectorAll(`.crew-stat-rate[data-crew-id="${crewId}"]`).forEach(el => {
+                                    el.textContent = stat.rate;
+                                    const isPositive = stat.rate.startsWith('+');
+                                    const isZero = stat.rate === '0.00%';
+                                    
+                                    // Remove existing Tailwind text classes, add new ones dynamically
+                                    el.classList.remove('text-slate-500', 'text-emerald-500', 'text-rose-500', 'bg-slate-200/50', 'dark:bg-white/5', 'bg-emerald-500/10', 'bg-rose-500/10');
+                                    
+                                    if (isPositive) {
+                                        el.classList.add('text-emerald-500', 'bg-emerald-500/10');
+                                    } else if (isZero) {
+                                        el.classList.add('text-slate-500', 'bg-slate-200/50', 'dark:bg-white/5');
+                                    } else {
+                                        el.classList.add('text-rose-500', 'bg-rose-500/10');
+                                    }
+                                });
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Failed to load crew stats:", err);
+                        document.querySelectorAll('.animate-pulse').forEach(el => {
+                            if(el.parentElement.hasAttribute('data-crew-id')){
+                                el.parentElement.innerHTML = '<span class="text-rose-500 text-xs font-medium">Error Fix required</span>';
+                            }
+                        });
+                    });
+            }
+        });
+    </script>
+</th:block>
+
+</html>

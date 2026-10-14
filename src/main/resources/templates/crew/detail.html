@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+<head>
+    <title th:text="${crew.name} + ' | TradingCrews:트루'">Space 2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <style>
+        .space-wrap {
+            display: grid;
+            grid-template-columns: 320px 1fr 340px;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+            grid-template-areas:
+                "top top top"
+                "left center right"
+                "bottom bottom bottom";
+            gap: 1.5rem;
+            max-width: 1700px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            height: calc(100vh - 80px);
+        }
+
+        .panel {
+            background: var(--glass-bg);
+            backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            padding: 2rem;
+            overflow-y: auto;
+            scrollbar-width: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.3s;
+        }
+
+        .panel:hover {
+            border-color: rgba(2, 166, 200, 0.25);
+        }
+
+        .panel::-webkit-scrollbar { display: none; }
+
+        .panel-title {
+            font-size: 0.75rem;
+            font-weight: 900;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* ── AREAS ── */
+        .area-top {
+            grid-area: top;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.75rem 2.5rem;
+            background: linear-gradient(to right, rgba(2, 166, 200, 0.05), transparent);
+        }
+
+        .area-left { grid-area: left; display: flex; flex-direction: column; gap: 1.5rem; }
+        .area-center { grid-area: center; display: flex; flex-direction: column; }
+        .area-right { grid-area: right; }
+        .area-bottom {
+            grid-area: bottom;
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 2rem;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .c-title {
+            font-size: 1.75rem;
+            font-weight: 900;
+            color: var(--text-primary);
+            letter-spacing: -0.04em;
+            font-family: 'Outfit', sans-serif;
+            text-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .stat-label { 
+            font-size: 0.65rem; 
+            font-weight: 900; 
+            color: var(--text-secondary); 
+            text-transform: uppercase; 
+            letter-spacing: 0.15em; 
+            margin-bottom: 0.35rem;
+        }
+        .stat-val { 
+            font-size: 1.25rem; 
+            font-weight: 900; 
+            color: var(--text-primary); 
+            font-variant-numeric: tabular-nums; 
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem;
+            background: var(--bg-surface-2);
+            border-radius: 1.5rem;
+            border: 1px solid var(--border-base);
+            margin-bottom: 0.75rem;
+            transition: all 0.3s;
+        }
+
+        .member-item:hover {
+            background: var(--bg-muted);
+            border-color: var(--accent);
+            transform: translateX(5px);
+        }
+
+        .m-role { font-size: 0.6rem; font-weight: 900; color: var(--accent); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.1em; }
+        .m-name { font-weight: 800; color: var(--text-primary); font-size: 0.95rem; }
+
+        .feed-area {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            background: var(--bg-inset);
+            border-radius: 2rem;
+            margin-bottom: 1.5rem;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border: 1px solid var(--border-base);
+            scrollbar-width: none;
+            box-shadow: inset 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .feed-area::-webkit-scrollbar { display: none; }
+        
+        .area-center .feed-form { display: flex; gap: 0.5rem; margin-top: auto; }
+        @media (max-width: 768px) {
+            .msg-bubble { padding: 0.6rem 1rem; font-size: 0.9rem; }
+            .area-center .feed-form { display: none; margin-top: 0; }
+            .area-center.active .feed-form { display: flex; position: fixed; bottom: 0; left: 0; width: 100%; padding: 0.75rem; background: var(--bg-surface); border-top: 1px solid var(--border-base); z-index: 1000; }
+        }
+
+        .feed-msg { display: flex; flex-direction: column; max-width: 82%; }
+        .feed-msg.mine { align-self: flex-end; align-items: flex-end; }
+        .feed-msg.others { align-self: flex-start; align-items: flex-start; }
+
+        .msg-bubble {
+            padding: 0.85rem 1.4rem;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            word-break: break-all;
+            position: relative;
+        }
+
+        .feed-msg.mine .msg-bubble {
+            background: var(--accent);
+            color: #fff;
+            border-radius: 1.5rem 1.5rem 0.4rem 1.5rem;
+            box-shadow: 0 10px 20px rgba(2, 166, 200, 0.25);
+            font-weight: 500;
+        }
+
+        .feed-msg.others .msg-bubble {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border-radius: 1.5rem 1.5rem 1.5rem 0.4rem;
+            border: 1px solid var(--border-base);
+        }
+
+        @media (max-width: 768px) {
+            .msg-bubble { padding: 0.6rem 1rem; font-size: 0.9rem; }
+        }
+
+        .msg-sender { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; padding: 0 8px; }
+        .msg-sender-name { font-size: 0.75rem; font-weight: 900; color: var(--text-primary); }
+        .msg-time { font-size: 0.65rem; color: var(--text-secondary); font-weight: 600; }
+
+        .vote-poll-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: 1.75rem;
+            padding: 1.75rem;
+            margin: 0.75rem 0;
+            min-width: 280px;
+            box-shadow: var(--shadow-md);
+        }
+
+        .vote-option-btn {
+            width: 100%;
+            text-align: left;
+            padding: 1rem 1.25rem;
+            background: var(--bg-surface-2);
+            border: 1px solid var(--border-base);
+            border-radius: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 0.6rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 800;
+            transition: all 0.3s;
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .vote-option-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(2, 166, 200, 0.1); transform: scale(1.02); }
+        .vote-option-btn.selected { border-color: var(--accent); background: rgba(2, 166, 200, 0.15); color: var(--accent); }
+        .vote-option-btn.winner { border-color: #10b981 !important; background: rgba(16, 185, 129, 0.1) !important; color: #10b981 !important; }
+
+        .log-item {
+            background: var(--bg-surface);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            border-left: 5px solid var(--accent);
+            margin-bottom: 1rem;
+            border-top: 1px solid var(--border-base);
+            border-right: 1px solid var(--border-base);
+            border-bottom: 1px solid var(--border-base);
+            transition: all 0.3s;
+        }
+
+        .log-item:hover {
+            border-color: var(--accent);
+            background: var(--bg-surface-2);
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 1.1rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-base);
+            border-radius: 1.25rem;
+            color: var(--text-primary);
+            font-weight: 900;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .action-btn:hover { 
+            background: var(--accent-light); 
+            border-color: var(--accent); 
+            color: var(--accent);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .vote-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(4, 8, 16, 0.8);
+            backdrop-filter: blur(15px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 1.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .vote-modal-content {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-strong);
+            border-radius: 2.5rem;
+            width: 100%;
+            max-width: 480px;
+            padding: 3rem;
+            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.4);
+            animation: modalPop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .join-panel {
+            max-width: 580px;
+            margin: 6rem auto;
+            text-align: center;
+            padding: 4.5rem;
+            border-radius: 3.5rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-base);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.2);
+        }
+
+        @media (max-width: 1200px) {
+            .space-wrap { grid-template-columns: 280px 1fr; grid-template-areas: "top top" "left center" "right bottom"; height: auto; }
+            .area-right { grid-column: 1 / -1; }
+        }
+
+        @media (max-width: 768px) {
+            .space-wrap { display: flex; flex-direction: column; height: calc(100dvh - 80px) !important; padding: 0; gap: 0; overflow: hidden; margin: 0; max-width: 100%; }
+            .area-top { 
+                padding: 0.75rem 1.25rem; flex-direction: row; justify-content: space-between; align-items: center; border-radius: 0; border: none; border-bottom: 1px solid var(--border-base); min-height: 56px; 
+                background: var(--bg-surface);
+            }
+            .c-title { font-size: 1rem; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0; }
+            .stat-val { font-size: 0.95rem; }
+            .stat-label { display: none; }
+            
+            /* Mobile Tabs Control */
+            .mobile-tabs { display: flex; background: var(--bg-surface); border-bottom: 1px solid var(--border-strong); }
+            .tab-btn { flex: 1; padding: 0.85rem; font-size: 0.75rem; font-weight: 900; color: var(--text-muted); text-align: center; border-bottom: 2px solid transparent; transition: all 0.3s; }
+            .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); background: rgba(2, 166, 200, 0.05); }
+
+            /* Content Toggling */
+            .area-left, .area-center, .area-right { display: none !important; flex: 1; overflow-y: auto; padding: 1rem; border-radius: 0; border: none; background: transparent; box-shadow: none; }
+            .area-left.active, .area-center.active { display: flex !important; }
+            .area-right.active { display: block !important; }
+            
+            .area-center .feed-area { flex: 1; min-height: 0; padding: 1rem; border-radius: 1rem; margin-bottom: 4rem; } /* Account for fixed input */
+            
+            .area-bottom { display: none; } /* Show in menu or specific tab later if needed */
+            
+            .panel-title { margin-bottom: 1.5rem; display: none; } /* Title redundant on mobile tabs */
+            .join-panel { border-radius: 0; border: none; padding: 3rem 1.5rem; margin: 0; width: 100%; height: 100%; }
+        }
+        
+        /* Loading Skeleton */
+        .skeleton-text {
+            display: inline-block;
+            width: 80px;
+            height: 1.2rem;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.05) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 4px;
+            vertical-align: middle;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Drawer/Overlay cleanup - not used anymore */
+        .mobile-drawer, .drawer-overlay { display: none !important; }
+    </style>
+</head>
+
+<span layout:fragment="page-title">Operation Center</span>
+
+<div layout:fragment="content">
+    <div class="space-wrap">
+
+        <!-- Top Bar -->
+        <div class="panel area-top">
+            <div>
+                <div class="c-title" th:text="${crew.name}">크루 이름</div>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 6px; font-weight: 500;" 
+                     th:classappend="${isMember ? 'hidden md:block' : ''}" th:text="${crew.description}">크루 설명</div>
+            </div>
+            <div class="flex items-center gap-6 md:gap-12" th:if="${isMember}">
+                <div class="hidden md:block text-right">
+                    <div class="stat-label">Initial Balance</div>
+                    <div class="stat-val opacity-60" id="crewTotalInitial"><span class="skeleton-text"></span></div>
+                </div>
+                <div class="text-right">
+                    <div class="stat-label" th:classappend="${isMember ? 'hidden md:block' : ''}">Net Profit / PNL</div>
+                    <div class="flex items-baseline justify-end gap-2">
+                        <span class="stat-val text-accent" id="crewTotalProfit"><span class="skeleton-text"></span></span>
+                        <span id="crewProfitRate" style="color: var(--text-muted); font-weight: 900; font-size: 0.8rem;"><span class="skeleton-text" style="width: 50px;"></span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Tabs -->
+        <div class="md:hidden mobile-tabs" th:if="${isMember}">
+            <button class="tab-btn active" onclick="switchMobileTab('chat')">CHAT</button>
+            <button class="tab-btn" onclick="switchMobileTab('logs')">STRATEGY</button>
+            <button class="tab-btn" onclick="switchMobileTab('members')">MEMBERS</button>
+        </div>
+
+        <!-- 가입 유도 (비멤버) -->
+        <div th:if="${!isMember}" style="grid-column: 1 / -1;">
+            <div class="panel join-panel shadow-2xl border-accent/20">
+                <span class="text-5xl mb-6 block">🛡️</span>
+                <h3 class="text-2xl font-black mb-4" style="color:var(--text-primary)">Deploy to this Unit?</h3>
+                <p class="text-sm font-medium mb-10 leading-relaxed" style="color:var(--text-muted)">
+                    기밀 유지를 위해 단 7명의 대원만이 Space 2 대시보드에 접근할 수 있습니다.<br>
+                    현재 <strong th:text="${crew.memberCount}" style="color:var(--accent)"></strong>명의 대원이 작전 수행 중입니다.
+                </p>
+
+                <!-- 자유 참가 -->
+                <form th:if="${crew.memberCount < 7 and !crew.requireApproval}" th:action="@{|/crew/${crew.id}/join|}" method="post" class="space-y-4">
+                    <label for="joinRole" class="sr-only">희망 보직 선택</label>
+                    <select id="joinRole" name="role" required class="w-full p-4 rounded-xl border font-bold" style="background: var(--bg-surface-2); color: var(--text-primary); border-color: var(--border-base)">
+                        <option value="" disabled selected>희망 보직을 선택하세요</option>
+                        <option value="ANALYST">📈 Analyst (Technical)</option>
+                        <option value="SCOUTER">📡 Scouter (Intel)</option>
+                        <option value="RISK_MANAGER">🛡️ Risk Manager (Safety)</option>
+                    </select>
+                    <button type="submit" class="auth-required w-full py-4.5 bg-emerald-500 text-white rounded-xl font-black shadow-lg hover:scale-[1.02] active:scale-95 transition-all">
+                        INSTANT DEPLOYMENT
+                    </button>
+                </form>
+
+                <!-- 심사 중 -->
+                <div th:if="${myApplication != null and myApplication.status.name() == 'PENDING'}" class="p-8 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+                    <div class="text-4xl mb-4 animate-pulse">⏳</div>
+                    <h4 class="text-amber-500 font-black mb-2 uppercase">Application Under Review</h4>
+                    <p class="text-xs font-medium opacity-60 mb-8" style="color: var(--text-primary)">리더가 당신의 전술 기록을 검토하고 있습니다.</p>
+                    <a th:href="@{/crew}" class="inline-block px-6 py-3 rounded-xl font-black text-xs border" style="background: var(--bg-muted); color: var(--text-primary); border-color: var(--border-base)">RECALL TO BASE</a>
+                </div>
+
+                <!-- 승인제 신청 -->
+                <form th:if="${crew.memberCount < 7 and crew.requireApproval and (myApplication == null or myApplication.status.name() == 'REJECTED')}"
+                      th:action="@{|/crew/${crew.id}/apply|}" method="post" class="space-y-4 text-left">
+                    <div class="flex items-center gap-2 mb-2 px-1">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-amber-500">Selective Recruitment</span>
+                    </div>
+                    <label for="applyRole" class="sr-only">희망 보직</label>
+                    <select id="applyRole" name="role" required class="w-full p-4 rounded-xl border font-bold" style="background: var(--bg-surface-2); color: var(--text-primary); border-color: var(--border-base)">
+                        <option value="" disabled selected>희망 보직</option>
+                        <option value="ANALYST">📈 Analyst</option>
+                        <option value="SCOUTER">📡 Scouter</option>
+                        <option value="RISK_MANAGER">🛡️ Risk Manager</option>
+                    </select>
+                    <label for="applyMessage" class="sr-only">전략 기록 및 포부</label>
+                    <textarea id="applyMessage" name="message" rows="3" required placeholder="리더에게 보낼 당신의 매매 강점과 포부를 작성하세요."
+                              class="w-full p-4 rounded-xl border font-medium text-sm" style="background: var(--bg-surface-2); color: var(--text-primary); border-color: var(--border-base)"></textarea>
+                    <button type="submit" class="auth-required w-full py-4.5 bg-amber-500 text-white rounded-xl font-black shadow-lg hover:scale-[1.02] active:scale-95 transition-all">
+                        SEND APPLICATION
+                    </button>
+                </form>
+
+                <div th:if="${crew.memberCount >= 7}" class="p-6 rounded-2xl bg-red-500/10 text-red-500 font-black border border-red-500/20">
+                    RECRUITMENT CLOSED (FULL CAPACITY)
+                </div>
+            </div>
+        </div>
+
+        <!-- Left: Members -->
+        <div class="area-left" th:if="${isMember}" id="mobile-tab-members">
+            <div class="panel">
+                <div class="panel-title mb-6">👥 CREW MEMBERS</div>
+                <div id="crewMembersList" class="space-y-2">
+                    <div th:each="m : ${crew.members}" class="member-item">
+                        <div>
+                            <div class="m-role" th:text="${m.role.description}">리더</div>
+                            <div class="m-name" th:text="${m.member.nickname}">이름</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="stat-val text-xs crew-member-asset" th:data-member-id="${m.member.id}">
+                                <span class="skeleton-text" style="width: 60px;"></span>
+                            </div>
+                            <div class="crew-member-rate" th:data-member-id="${m.member.id}" style="font-size: 0.65rem; color: var(--text-muted); font-weight: 900;">
+                                <span class="skeleton-text" style="width: 40px;"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button th:if="${!crew.full}" onclick="copyInviteLink()" class="w-full mt-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest border transition-all"
+                        style="background: var(--accent-light); color: var(--accent); border-color: var(--accent-light)">
+                    🔗 Copy Intel Link
+                </button>
+            </div>
+
+            <!-- Leader Only -->
+            <div class="panel border-amber-500/30" th:if="${isLeader}">
+                <div class="panel-title" style="color: #f59e0b;">🔔 PENDING RECRUITS</div>
+                <div th:if="${pendingApplications.isEmpty()}" class="text-center py-6 text-[10px] uppercase font-black opacity-30">All Quiet</div>
+                <div th:each="app : ${pendingApplications}" class="p-4 rounded-xl mb-3 border border-amber-500/10" style="background: var(--bg-surface-2)">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-black text-sm" style="color: var(--text-primary)" th:text="${app.member.nickname}">닉네임</span>
+                        <span class="text-[9px] font-black text-blue-500 uppercase tracking-widest" th:text="${app.requestedRole.description}">보직</span>
+                    </div>
+                    <p class="text-[11px] font-medium opacity-60 mb-4 italic" style="color: var(--text-primary)" th:text="${app.message}">메시지</p>
+                    <div class="flex gap-2">
+                        <form th:action="@{|/crew/application/${app.id}/approve|}" method="post" class="flex-1">
+                            <input type="hidden" name="crewId" th:value="${crew.id}">
+                            <button type="submit" class="w-full py-2 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase">Approve</button>
+                        </form>
+                        <form th:action="@{|/crew/application/${app.id}/reject|}" method="post" class="flex-1">
+                            <input type="hidden" name="crewId" th:value="${crew.id}">
+                            <button type="submit" class="w-full py-2 bg-red-500/10 text-red-500 border border-red-500/20 rounded-lg text-[9px] font-black uppercase">Deny</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center: Live Feed -->
+        <div class="panel area-center active" th:if="${isMember}" id="mobile-tab-chat">
+            <div class="panel-title">📡 LIVE OPS STREAM</div>
+            <div class="feed-area custom-scrollbar" id="chatList">
+                <div class="feed-msg" th:each="msg : ${chatMessages}" th:classappend="${msg.sender.id == (session.loginMember != null ? session.loginMember.id : -1)} ? 'mine' : 'others'">
+                    <div class="msg-sender">
+                        <span class="msg-sender-name" th:text="${msg.sender.nickname}">발송자</span>
+                        <span class="msg-time" th:text="${#temporals.format(msg.createdAt, 'HH:mm')}">시간</span>
+                    </div>
+                    <div th:if="${msg.type.name() == 'TEXT'}" class="msg-bubble font-medium shadow-none" th:text="${msg.content}">내용</div>
+
+                    <div th:if="${msg.type.name() == 'POLL'}" class="vote-poll-box" th:id="'poll-' + ${msg.id}">
+                        <div class="font-black mb-4 flex items-center gap-2" th:text="'📊 ' + ${msg.content}" style="color: var(--text-primary)"></div>
+                        <div class="poll-options-container space-y-3">
+                            <th:block th:with="results=${msg.getVoteResults()}, total=${msg.votes.size()}">
+                                <div th:each="opt : ${msg.pollOptions}" th:with="optCount=${results.get(opt)}, maxCount=${msg.getMaxVoteCount()}">
+                                    <button class="auth-required vote-option-btn" th:data-msg-id="${msg.id}" th:data-opt-val="${opt}"
+                                            onclick="vote(this.getAttribute('data-msg-id'), this.getAttribute('data-opt-val'))"
+                                            th:disabled="${msg.isClosed}" th:classappend="${msg.isClosed && optCount > 0 && optCount == maxCount ? 'winner' : ''}">
+                                        <span th:text="${opt}">옵션</span>
+                                        <span class="vote-count opacity-40" th:text="${optCount}">0</span>
+                                    </button>
+                                    <div class="h-1 rounded-full bg-slate-500/10 overflow-hidden mt-1 px-1">
+                                        <div class="h-full transition-all duration-700" 
+                                             th:style="'width: ' + (${total > 0 ? (optCount * 100.0 / total) : 0}) + '%; background: ' + (${msg.isClosed && optCount > 0 && optCount == maxCount ? '#10b981' : 'var(--accent)'})"></div>
+                                    </div>
+                                </div>
+                            </th:block>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-dashed flex justify-between items-center" style="border-color: var(--border-base)">
+                            <span class="poll-status text-[9px] font-black uppercase tracking-widest" th:style="'color: ' + (${msg.isClosed ? '#10b981' : 'var(--accent)'})" th:text="${msg.isClosed ? 'Final Result' : 'Poll Active'}"></span>
+                            <button th:if="${!msg.isClosed && session.loginMember != null && (msg.sender.id == session.loginMember.id || isLeader)}" 
+                                    th:data-msg-id="${msg.id}" onclick="closePoll(this.getAttribute('data-msg-id'))"
+                                    class="text-[8px] font-black uppercase text-red-500 border border-red-500/20 px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-all">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feed-form">
+                <input type="text" id="chatInput" placeholder="Send intelligence or /투표..."
+                       class="flex-1 p-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-electric/20 transition-all font-medium text-sm"
+                       style="background: var(--bg-surface-2); border-color: var(--border-base); color: var(--text-primary)"
+                       onkeypress="if(event.keyCode==13) { sendChat(); event.preventDefault(); }">
+                <button onclick="sendChat()" class="auth-required px-8 bg-electric text-white font-black rounded-xl hover:scale-105 active:scale-95 transition-all shadow-xl blue-glow">SEND</button>
+            </div>
+        </div>
+
+        <!-- Right: Strategy Log -->
+        <div class="panel area-right" th:if="${isMember}" id="mobile-tab-logs" style="display: flex; flex-direction: column;">
+            <div class="panel-title">📝 STRATEGY OPS LOG</div>
+            <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-4 mb-4">
+                <div th:each="log : ${strategyLogs}" class="log-item">
+                    <div class="flex justify-between items-center mb-2 pb-2 border-b border-dashed" style="border-color: var(--border-base)">
+                        <span th:text="${log.author.nickname}" class="text-[10px] font-black text-accent uppercase"></span>
+                        <span th:text="${#temporals.format(log.createdAt, 'MM-dd HH:mm')}" class="text-[9px] font-medium opacity-30" style="color: var(--text-primary)"></span>
+                    </div>
+                    <div class="text-xs font-medium leading-relaxed" style="color: var(--text-primary); white-space: pre-wrap;" th:text="${log.content}"></div>
+                </div>
+                <div th:if="${strategyLogs.isEmpty()}" class="py-20 text-center opacity-20 italic text-[10px] font-black">No entries recorded.</div>
+            </div>
+
+            <form th:action="@{|/crew/${crew.id}/log|}" method="post" class="space-y-2 pt-4 border-t" style="border-color: var(--border-base)">
+                <textarea name="strategyLog" class="w-full p-4 rounded-xl border text-xs font-medium focus:outline-none" 
+                          style="background: var(--bg-surface-2); border-color: var(--border-base); color: var(--text-primary)"
+                          placeholder="Record tactical analysis..." required></textarea>
+                <button type="submit" class="auth-required w-full py-3 rounded-xl font-black text-[10px] uppercase tracking-widest bg-accent-light text-accent border border-accent-light hover:bg-accent hover:text-white transition-all">➕ ADD INTEL</button>
+            </form>
+        </div>
+
+        <!-- Bottom: Action Links -->
+        <div class="area-bottom" th:if="${isMember}">
+            <button class="action-btn" onclick="openPollModal('Bull vs Bear (Sentiment)', 'Bull, Bear, Neutral')">📊 BULL vs BEAR</button>
+            <button class="action-btn">📷 SHARE SNAPSHOT</button>
+            <button class="action-btn opacity-40 cursor-not-allowed">⚡ API SYNC PURCHASE</button>
+            <form th:action="@{|/crew/${crew.id}/leave|}" method="post" class="flex-1" onsubmit="return confirm('이 부대를 떠나시겠습니까? 리더인 경우 작전이 완전히 종료됩니다.');">
+                <button type="submit" class="action-btn text-slate-500 hover:text-red-500 hover:bg-red-500/10">🚪 LEAVE UNIT</button>
+            </form>
+            <form th:if="${isAdmin}" id="adminDeleteForm" th:action="@{|/crew/${crew.id}/admin-delete|}" method="post" class="flex-1">
+                <input type="hidden" name="reason" id="adminDeleteReason">
+                <button type="button" onclick="openAdminDeleteModal()" class="action-btn text-red-500 border-red-500/20 bg-red-500/5 hover:bg-red-500 hover:text-white">🚨 FORCE DELETE</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Poll Create Modal -->
+    <div id="pollModal" class="vote-modal" role="dialog" aria-modal="true" 
+         onclick="if(event.target==this)closePollModal()" 
+         onkeydown="if(event.key==='Escape')closePollModal()" tabindex="-1">
+        <div class="vote-modal-content">
+            <h3 class="text-xl font-black mb-1" style="color: var(--text-primary)">📊 Create Tactical Poll</h3>
+            <p class="text-[10px] font-medium opacity-40 mb-8 uppercase tracking-widest" style="color: var(--text-primary)">Real-time collective intelligence</p>
+            
+            <div class="space-y-6">
+                <div>
+                    <label for="pollTopic" class="text-[10px] font-black uppercase tracking-widest mb-2 block opacity-60" style="color: var(--text-primary)">Poll Objective</label>
+                    <input type="text" id="pollTopic" placeholder="e.g. Exit at resistance level?" class="w-full p-4 rounded-xl border font-bold" style="background: var(--bg-surface-2); color: var(--text-primary); border-color: var(--border-base)">
+                </div>
+                <div>
+                    <label for="pollOptions" class="text-[10px] font-black uppercase tracking-widest mb-2 block opacity-60" style="color: var(--text-primary)">Options (separated by comma)</label>
+                    <input type="text" id="pollOptions" placeholder="Yes, No, Wait" class="w-full p-4 rounded-xl border font-bold" style="background: var(--bg-surface-2); color: var(--text-primary); border-color: var(--border-base)">
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closePollModal()" class="flex-1 py-4 font-black rounded-xl text-xs uppercase" style="background: var(--bg-muted); color: var(--text-secondary)">Cancel</button>
+                    <button onclick="submitPoll()" class="flex-1 py-4 text-white font-black rounded-xl text-xs uppercase shadow-xl shadow-blue-500/20 transition-all hover:scale-[1.02]" style="background: var(--accent)">Launch Poll</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Force Delete Modal -->
+    <div id="adminDeleteModal" class="vote-modal" role="dialog" aria-modal="true" 
+         onclick="if(event.target==this)closeAdminDeleteModal()" 
+         onkeydown="if(event.key==='Escape')closeAdminDeleteModal()" tabindex="-1">
+        <div class="vote-modal-content border-red-500/30">
+            <h3 class="text-xl font-black mb-1 text-red-500">🚨 Force Dissolve Crew</h3>
+            <p class="text-[10px] font-medium opacity-40 mb-8 uppercase tracking-widest" style="color: var(--text-primary)">Admin Override Authority</p>
+            
+            <div class="space-y-6">
+                <div>
+                    <label for="adminReasonInput" class="text-[10px] font-black uppercase tracking-widest mb-2 block opacity-60" style="color: var(--text-primary)">Reason for Dissolution</label>
+                    <textarea id="adminReasonInput" placeholder="Enter the official reason for this action (sent to all members)..." 
+                              class="w-full p-4 rounded-xl border font-bold text-xs min-h-[120px]" 
+                              style="background: var(--bg-surface-2); color: var(--text-primary); border-color: var(--border-base)"></textarea>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button onclick="closeAdminDeleteModal()" class="flex-1 py-4 font-black rounded-xl text-xs uppercase" style="background: var(--bg-muted); color: var(--text-secondary)">Stand Down</button>
+                    <button onclick="submitAdminDelete()" class="flex-1 py-4 text-white font-black rounded-xl text-xs uppercase shadow-xl shadow-red-500/20 transition-all hover:scale-[1.02] bg-red-500">Execute Dissolution</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="script">
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const crewId = /*[[${crew.id}]]*/ null;
+        const memberId = /*[[${session.loginMember != null ? session.loginMember.id : null}]]*/ null;
+        const isMember = /*[[${isMember}]]*/ false;
+        const isLeaderFlag = /*[[${isLeader}]]*/ false;
+
+        let stompClient = null;
+
+        function switchMobileTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active');
+            
+            document.getElementById('mobile-tab-chat').classList.remove('active');
+            document.getElementById('mobile-tab-logs').classList.remove('active');
+            document.getElementById('mobile-tab-members').classList.remove('active');
+            
+            const target = document.getElementById(`mobile-tab-${tab}`);
+            target.classList.add('active');
+            if(tab === 'chat') scrollToBottom();
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (isMember && crewId && memberId) {
+                connectChat();
+                scrollToBottom();
+            }
+        });
+
+        function connectChat() {
+            const socket = new SockJS('/ws-crew');
+            stompClient = Stomp.over(socket);
+            stompClient.debug = null;
+            stompClient.connect({}, function (frame) {
+                stompClient.subscribe('/topic/crew/' + crewId, function (message) {
+                    showChat(JSON.parse(message.body));
+                });
+            });
+        }
+
+        function copyInviteLink() {
+            const inviteUrl = window.location.origin + '/crew/' + crewId;
+            navigator.clipboard.writeText(inviteUrl).then(() => {
+                alert('💌 Intel Link Copied!\nShare with your squad members.');
+            });
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chatInput');
+            const content = input.value.trim();
+            if (!content || !stompClient) return;
+            if (content === '/투표') { openPollModal(); input.value = ''; return; }
+            stompClient.send("/app/chat/" + crewId + "/sendMessage", {}, JSON.stringify({ crewId, senderId: memberId, content, type: 'TEXT' }));
+            input.value = '';
+        }
+
+        function openPollModal(topic = '', options = '') {
+            document.getElementById('pollModal').style.display = 'flex';
+            document.getElementById('pollTopic').value = topic;
+            document.getElementById('pollOptions').value = options;
+            document.getElementById('pollTopic').focus();
+        }
+
+        function closePollModal() { document.getElementById('pollModal').style.display = 'none'; }
+
+        function submitPoll() {
+            const topic = document.getElementById('pollTopic').value.trim();
+            const optionsRaw = document.getElementById('pollOptions').value.trim();
+            if (!topic || !optionsRaw) { alert('Fill all fields.'); return; }
+            const options = optionsRaw.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            if (options.length < 2) { alert('Min 2 options.'); return; }
+            stompClient.send("/app/chat/" + crewId + "/sendMessage", {}, JSON.stringify({ crewId, senderId: memberId, content: topic, type: 'POLL', pollOptions: options }));
+            closePollModal();
+        }
+
+        function vote(messageId, option) {
+            stompClient.send("/app/chat/" + crewId + "/vote", {}, JSON.stringify({ crewId, senderId: memberId, messageId, selectedOption: option }));
+        }
+
+        function closePoll(messageId) {
+            if (!confirm('End this poll?')) return;
+            stompClient.send("/app/chat/" + crewId + "/closePoll", {}, JSON.stringify({ crewId, senderId: memberId, messageId }));
+        }
+
+        function showChat(message) {
+            const chatList = document.getElementById('chatList');
+            if (message.type === 'VOTE_UPDATE' || message.type === 'POLL_CLOSE') { updatePollUI(message); return; }
+            const isMine = (message.senderId == memberId);
+            const msgObj = document.createElement('div');
+            msgObj.className = 'feed-msg ' + (isMine ? 'mine' : 'others');
+            let contentHtml = message.type === 'POLL' ? `
+                <div class="vote-poll-box" id="poll-${message.messageId}">
+                    <div class="font-black mb-4 flex items-center gap-2" style="color:var(--text-primary)">📊 ${message.content}</div>
+                    <div class="poll-options-container space-y-3">
+                        ${message.pollOptions.map(opt => `
+                            <button class="vote-option-btn" onclick="vote(${message.messageId}, '${opt}')">
+                                <span>${opt}</span><span class="vote-count opacity-40">0</span>
+                            </button>
+                            <div class="h-1 rounded-full bg-slate-500/10 overflow-hidden mt-1 px-1"><div class="h-full bg-electric transition-all duration-700" style="width: 0%"></div></div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-dashed flex justify-between items-center" style="border-color:var(--border-base)">
+                        <span class="poll-status text-[9px] font-black uppercase tracking-widest text-electric">Poll Active</span>
+                        ${(isMine || isLeaderFlag) ? `<button onclick="closePoll(${message.messageId})" class="text-[8px] font-black uppercase text-red-500 border border-red-500/20 px-2 py-1 rounded">Close</button>` : ''}
+                    </div>
+                </div>
+            ` : `<div class="msg-bubble font-medium shadow-none">${message.content}</div>`;
+            msgObj.innerHTML = `<div class="msg-sender"><span class="msg-sender-name">${message.senderName}</span><span class="msg-time">${message.timestamp}</span></div>${contentHtml}`;
+            chatList.appendChild(msgObj); scrollToBottom();
+        }
+
+        function updatePollUI(message) {
+            const pollBox = document.getElementById('poll-' + message.messageId);
+            if (!pollBox) return;
+            const counts = Object.values(message.pollResults || {});
+            const totalVotes = counts.reduce((a, b) => a + b, 0);
+            const maxVotes = counts.length > 0 ? Math.max(...counts) : 0;
+            pollBox.querySelectorAll('.vote-option-btn').forEach(btn => {
+                const optName = btn.querySelector('span').textContent;
+                const count = message.pollResults[optName] || 0;
+                btn.querySelector('.vote-count').textContent = count;
+                const bar = pollBox.querySelector(`.h-full[style*="width"]`); // Simplify select
+                const pct = totalVotes > 0 ? (count / totalVotes) * 100 : 0;
+                // Update corresponding bar
+                const parent = btn.nextElementSibling;
+                if(parent) parent.firstElementChild.style.width = pct + '%';
+                if (message.type === 'POLL_CLOSE') {
+                    btn.disabled = true;
+                    if (count > 0 && count === maxVotes) { btn.classList.add('winner'); if(parent) parent.firstElementChild.style.background = '#10b981'; }
+                }
+            });
+            if (message.type === 'POLL_CLOSE') {
+                const s = pollBox.querySelector('.poll-status'); if(s){ s.textContent = 'Final Result'; s.style.color = '#10b981'; }
+                const b = pollBox.querySelector('button[onclick^="closePoll"]'); if(b) b.remove();
+            }
+        }
+
+        function scrollToBottom() { 
+            const c = document.getElementById('chatList'); 
+            if(c) {
+                setTimeout(() => {
+                    c.scrollTop = c.scrollHeight;
+                }, 100);
+            } 
+        }
+
+        function openAdminDeleteModal() {
+            document.getElementById('adminDeleteModal').style.display = 'flex';
+            document.getElementById('adminReasonInput').focus();
+        }
+
+        function closeAdminDeleteModal() {
+            document.getElementById('adminDeleteModal').style.display = 'none';
+        }
+
+        function submitAdminDelete() {
+            const reason = document.getElementById('adminReasonInput').value.trim();
+            if (!reason) {
+                alert('삭제 사유를 입력해 주세요.');
+                return;
+            }
+            if (!confirm('정말로 이 크루를 강제 해체하시겠습니까?\n모든 데이터가 삭제되며 복구할 수 없습니다.')) return;
+            
+            document.getElementById('adminDeleteReason').value = reason;
+            document.getElementById('adminDeleteForm').submit();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const crewId = /*[[${crew.id}]]*/ null;
+            const isMember = /*[[${isMember}]]*/ false;
+            
+            if (crewId && isMember) {
+                fetch(`/api/crew/${crewId}/stats`)
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            const tInit = document.getElementById('crewTotalInitial');
+                            if(tInit) tInit.innerHTML = res.crewTotalInitial;
+                            
+                            const tProfit = document.getElementById('crewTotalProfit');
+                            if(tProfit) tProfit.innerHTML = res.crewTotalProfit;
+                            
+                            const tRate = document.getElementById('crewProfitRate');
+                            if(tRate){
+                                tRate.textContent = res.crewProfitRate;
+                                const isPos = res.crewProfitRate.startsWith('+');
+                                const isZ = res.crewProfitRate === '0.00%';
+                                tRate.style.color = isPos ? '#10b981' : (isZ ? 'var(--text-muted)' : '#ef4444');
+                                tRate.style.fontSize = isZ ? '0.8rem' : '1.25rem';
+                            }
+
+                            if(res.memberAssetMap && res.memberRateMap) {
+                                Object.keys(res.memberAssetMap).forEach(mId => {
+                                    const aEl = document.querySelector(`.crew-member-asset[data-member-id="${mId}"]`);
+                                    if(aEl) aEl.innerHTML = res.memberAssetMap[mId];
+                                    
+                                    const rEl = document.querySelector(`.crew-member-rate[data-member-id="${mId}"]`);
+                                    if(rEl) {
+                                        const r = res.memberRateMap[mId];
+                                        rEl.textContent = r;
+                                        const mPos = r.startsWith('+');
+                                        const mZ = r === '0.00%';
+                                        rEl.style.color = mPos ? '#10b981' : (mZ ? 'var(--text-muted)' : '#ef4444');
+                                    }
+                                });
+                            }
+                        }
+                    })
+                    .catch(e => console.error("Failed to fetch crew detail stats", e));
+            }
+        });
+        /*]]>*/
+    </script>
+</th:block>
+</html>

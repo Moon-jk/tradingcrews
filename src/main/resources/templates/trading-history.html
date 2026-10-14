@@ -1,0 +1,330 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}">
+
+  <head>
+    <title>거래내역 | STOCK LAB</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}" />
+    <style>
+      .board-page {
+        padding: 0;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .top-header {
+        padding: 1.25rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .top-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 800;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .market-tab {
+        display: flex;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-base);
+      }
+
+      .market-btn {
+        flex: 1;
+        text-align: center;
+        padding: 0.75rem 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+
+      .market-btn.active {
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--text-primary);
+      }
+
+      .up {
+        color: #22c55e !important;
+      }
+
+      .down {
+        color: #ef4444 !important;
+      }
+
+      @media(min-width: 1024px) {
+        .board-page {
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 2rem 1rem;
+        }
+
+        .pc-header-wrap {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-bottom: 2rem;
+        }
+
+        .top-header {
+          padding: 0;
+        }
+
+        .top-header h2 {
+          font-size: 1.5rem;
+        }
+
+        .market-tab {
+          border-bottom: none;
+          background: transparent;
+          gap: 0.5rem;
+          margin-bottom: 0;
+        }
+
+        .market-btn {
+          padding: 0.6rem 1.5rem;
+          border-radius: 2rem;
+          background: var(--bg-surface-2);
+          border: 1px solid var(--border-base);
+          width: auto;
+        }
+
+        .market-btn.active {
+          background: var(--text-primary);
+          color: var(--bg-surface);
+          border-color: var(--text-primary);
+        }
+      }
+
+      /* 아코디언 리스트 스타일 */
+      .history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .history-item {
+        background: var(--bg-surface-2);
+        border: 1px solid var(--border-base);
+        border-radius: 1rem;
+        overflow: hidden;
+        transition: border-color 0.2s;
+      }
+
+      .history-item[open] {
+        border-color: var(--text-muted);
+      }
+
+      .history-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.3rem 1.25rem;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+        transition: background 0.15s;
+      }
+
+      .history-summary:hover {
+        background: var(--bg-surface);
+      }
+
+      .history-summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .summary-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .summary-left .badge {
+        font-size: 11px;
+        font-weight: 800;
+        padding: 0.3rem 0.6rem;
+        border-radius: 0.4rem;
+      }
+
+      .title-wrap {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .title-wrap .name {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .title-wrap .sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .summary-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+      }
+
+      .summary-right .date {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
+
+      .summary-right .icon {
+        color: var(--text-muted);
+        transition: transform 0.2s;
+      }
+
+      .history-item[open] .summary-right .icon {
+        transform: rotate(180deg);
+        color: var(--text-primary);
+      }
+
+      .history-detail {
+        padding: 0.5rem;
+        border-top: 1px dashed var(--border-base);
+        background: var(--bg-surface);
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        font-size: 13px;
+      }
+
+      @media(min-width: 640px) {
+        .history-detail {
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+        }
+      }
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: var(--bg-surface-2);
+        border-radius: 0.5rem;
+      }
+
+      .detail-row .label {
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      .detail-row .val {
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+    </style>
+  </head>
+  <span layout:fragment="page-title" style="display:none;">History</span>
+
+  <div layout:fragment="content">
+    <div class="board-page">
+
+      <div class="pc-header-wrap">
+        <div class="top-header">
+          <h2>📋 거래 내역</h2>
+          <div class="header-actions">
+            <a th:href="@{/trading(market=${market})}" class="btn btn-ghost"
+              style="padding:0.4rem 0.8rem; font-size:12px;">← 대시보드</a>
+          </div>
+        </div>
+        <!-- 시장 탭 -->
+        <div class="market-tab">
+          <a href="/trading/history?market=US" class="market-btn" th:classappend="${market=='US'} ? ' active'">🇺🇸 미국
+            (USD)</a>
+          <a href="/trading/history?market=KR" class="market-btn" th:classappend="${market=='KR'} ? ' active'">🇰🇷 한국
+            (KRW)</a>
+        </div>
+      </div>
+
+      <div style="padding: 1rem; max-width: 1000px; width: 100%; margin: 0 auto;">
+        <div class="history-list">
+          <details th:each="h : ${histories}" class="history-item">
+            <summary class="history-summary">
+              <div class="summary-left">
+                <span th:if="${h.tradeType.name()=='BUY'}" class="badge up"
+                  style="background:rgba(34,197,94,0.1);">매수</span>
+                <span th:if="${h.tradeType.name()=='SELL'}" class="badge down"
+                  style="background:rgba(239,68,68,0.1);">매도</span>
+                <div class="title-wrap">
+                  <div class="name" th:text="${h.symbol}">AAPL</div>
+                  <div class="sub" th:text="${h.companyName}">Apple Inc.</div>
+                </div>
+              </div>
+              <div class="summary-right">
+                <div class="date" th:text="${#temporals.format(h.tradedAt,'MM.dd HH:mm')}">10.24 10:00</div>
+                <svg class="icon" style="width:16px; height:16px;" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </summary>
+
+            <div class="history-detail">
+              <div class="detail-row">
+                <span class="label">수량</span>
+                <span class="val" th:text="${h.quantity} + '주'"></span>
+              </div>
+              <div class="detail-row">
+                <span class="label">체결가</span>
+                <span class="val"
+                  th:text="${account.currencySymbol} + ${#numbers.formatDecimal(h.price,1,'COMMA',2,'POINT')}"></span>
+              </div>
+              <div class="detail-row">
+                <span class="label">총금액</span>
+                <span class="val"
+                  th:text="${account.currencySymbol} + ${#numbers.formatDecimal(h.totalAmount,1,'COMMA',2,'POINT')}"></span>
+              </div>
+              <div class="detail-row" th:if="${h.tradeType.name()=='SELL'}">
+                <span class="label">실현손익</span>
+                <span class="val" th:classappend="${h.realizedPnl >= 0} ? 'up' : 'down'"
+                  th:text="${(h.realizedPnl >= 0 ? '+' : '') + account.currencySymbol} + ${#numbers.formatDecimal(h.realizedPnl,1,'COMMA',2,'POINT')}">
+                </span>
+              </div>
+            </div>
+          </details>
+
+          <!-- Empty State -->
+          <div th:if="${#lists.isEmpty(histories)}"
+            style="text-align:center; padding:4rem 1rem; color:var(--text-muted); background:var(--bg-surface-2); border-radius:1rem; border:1px solid var(--border-base);">
+            <span style="font-size:3rem; display:block; margin-bottom:1rem; opacity:0.5;">📭</span>
+            <div style="font-size:15px; font-weight:600;">거래 내역이 없습니다.</div>
+          </div>
+        </div>
+
+        <!-- 페이지네이션 -->
+        <div class="board-pagination" th:if="${totalPages > 1}">
+          <a th:each="p : ${#numbers.sequence(1, totalPages)}" th:href="@{/trading/history(market=${market},page=${p})}"
+            class="page-btn" th:classappend="${p==currentPage} ? ' active'" th:text="${p}">1</a>
+        </div>
+
+      </div>
+    </div>
+  </div>

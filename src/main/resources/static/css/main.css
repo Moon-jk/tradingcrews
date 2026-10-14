@@ -1,0 +1,143 @@
+/* ════════════════════════════════════════
+   main.css — Market Overview 페이지
+   layout.css의 CSS 변수를 공유합니다.
+   ════════════════════════════════════════ */
+
+/* ── 스크롤바 숨김 ── */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ════════════════════════════════════════
+   카드 패널
+   ════════════════════════════════════════ */
+.main-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-base);
+  box-shadow: var(--shadow-md);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ── 카드 내부 인셋 영역 ── */
+.main-inset {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-base);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* ── 유저 배너 ── */
+.user-banner {
+  background: var(--bg-muted);
+  border: 1px solid var(--border-base);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* ── 섹션 레이블 ── */
+.section-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ════════════════════════════════════════
+   Watchlist
+   ════════════════════════════════════════ */
+.watchlist-wrapper {
+  position: relative;
+  z-index: 10;
+  transition: all 0.4s ease-in-out;
+}
+
+.watchlist-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  overflow-x: auto;
+}
+
+@media (min-width: 1024px) {
+  .watchlist-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+}
+
+/* ── 종목 칩 ── */
+.stock-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.2rem;
+  min-width: 70px;
+  border-radius: 0.65rem;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-base);
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.stock-chip:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.stock-chip .chip-label {
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 10px;
+  transition: color 0.2s ease;
+}
+
+.stock-chip:hover .chip-label {
+  color: var(--accent);
+}
+
+/* ── 펼치기 버튼 ── */
+.expand-btn {
+  display: none;
+  width: 100%;
+  margin-top: 4px;
+  padding: 2px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.expand-btn:hover {
+  color: var(--accent);
+}
+
+.expand-btn svg {
+  transition: transform 0.3s ease;
+}
+
+.expand-btn.active svg {
+  transform: rotate(180deg);
+}
+
+/* ════════════════════════════════════════
+   비로그인 상태
+   ════════════════════════════════════════ */
+.login-prompt {
+  background: var(--bg-inset);
+  border: 1px solid var(--border-base);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* TP number and label colors for both dark and light modes */
+.tp-number, .tp-label { color: var(--text-primary); }

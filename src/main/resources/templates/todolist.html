@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TODO</title>
+<meta name="_csrf" th:content="${_csrf.token}"/>
+<meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0f;
+    --surface: #18181b;
+    --surface2: #222228;
+    --border: #2e2e36;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --high: #ff4d6d;
+    --high-bg: rgba(255,77,109,0.1);
+    --mid: #f5a623;
+    --mid-bg: rgba(245,166,35,0.1);
+    --low: #4ade80;
+    --low-bg: rgba(74,222,128,0.1);
+    --accent: #7c6ff7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .app {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.6rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: #fff;
+  }
+
+  .stats {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+
+  .input-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .task-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .task-input:focus { border-color: var(--accent); }
+  .task-input::placeholder { color: var(--muted); }
+
+  .priority-btns {
+    display: flex;
+    gap: 6px;
+  }
+
+  .prio-btn {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: var(--surface2);
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .prio-btn[data-p="high"].active, .prio-btn[data-p="high"]:hover { background: var(--high-bg); color: var(--high); border-color: var(--high); }
+  .prio-btn[data-p="mid"].active, .prio-btn[data-p="mid"]:hover { background: var(--mid-bg); color: var(--mid); border-color: var(--mid); }
+  .prio-btn[data-p="low"].active, .prio-btn[data-p="low"]:hover { background: var(--low-bg); color: var(--low); border-color: var(--low); }
+
+  .add-btn {
+    padding: 10px 20px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+
+  .add-btn:hover { opacity: 0.85; }
+  .add-btn:active { transform: scale(0.97); }
+
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--muted);
+  }
+
+  .spacer { flex: 1; }
+
+  .clear-done {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: color 0.2s;
+    font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  .clear-done:hover { color: var(--high); border-color: var(--high); }
+
+  .section { margin-bottom: 28px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .section-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .section-line { flex: 1; height: 1px; background: var(--border); }
+  .section-count { font-size: 0.72rem; color: var(--muted); }
+
+  .high .section-label { color: var(--high); }
+  .mid .section-label { color: var(--mid); }
+  .low .section-label { color: var(--low); }
+
+  .task-list { display: flex; flex-direction: column; gap: 6px; }
+
+  .task-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .task-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 12px 0 0 12px;
+  }
+
+  .high .task-item::before { background: var(--high); }
+  .mid .task-item::before { background: var(--mid); }
+  .low .task-item::before { background: var(--low); }
+
+  .task-item:hover { border-color: #3a3a44; background: var(--surface2); }
+
+  .task-item.done {
+    opacity: 0.45;
+  }
+
+  .task-item.done .task-text {
+    text-decoration: line-through;
+    color: var(--muted);
+  }
+
+  .check-wrap {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    position: relative;
+  }
+
+  .check-wrap input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%; height: 100%;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  .checkmark {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    pointer-events: none;
+  }
+
+  .check-wrap input:checked ~ .checkmark {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .checkmark svg { opacity: 0; transform: scale(0.5); transition: all 0.15s; }
+  .check-wrap input:checked ~ .checkmark svg { opacity: 1; transform: scale(1); }
+
+  .high .check-wrap input:checked ~ .checkmark { background: var(--high); border-color: var(--high); }
+  .mid .check-wrap input:checked ~ .checkmark { background: var(--mid); border-color: var(--mid); }
+  .low .check-wrap input:checked ~ .checkmark { background: var(--low); border-color: var(--low); }
+
+  .task-text {
+    flex: 1;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    color: var(--text);
+    transition: color 0.2s;
+  }
+
+  .task-date {
+    font-size: 0.72rem;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .delete-btn {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: all 0.15s;
+    font-size: 1rem;
+  }
+
+  .task-item:hover .delete-btn { opacity: 1; }
+  .delete-btn:hover { background: var(--high-bg); color: var(--high); }
+
+  .empty-msg {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.82rem;
+    padding: 20px;
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+  }
+
+  .progress-bar-wrap {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--low));
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    width: 0%;
+  }
+
+  @media (max-width: 520px) {
+    .input-row { flex-wrap: wrap; }
+    .priority-btns { order: -1; width: 100%; }
+    .prio-btn { flex: 1; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>TODO</h1>
+    <span class="stats" id="stats">0 / 0 완료</span>
+  </header>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="input-area">
+    <div class="input-row">
+      <div class="priority-btns">
+        <button class="prio-btn active" data-p="high">상</button>
+        <button class="prio-btn" data-p="mid">중</button>
+        <button class="prio-btn" data-p="low">하</button>
+      </div>
+      <input type="text" class="task-input" id="taskInput" placeholder="새 할 일을 입력하세요...">
+      <button class="add-btn" onclick="addTask()">추가</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" data-f="all">전체</button>
+    <button class="filter-btn" data-f="todo">미완료</button>
+    <button class="filter-btn" data-f="done">완료</button>
+    <button class="filter-btn" data-f="high">상</button>
+    <button class="filter-btn" data-f="mid">중</button>
+    <button class="filter-btn" data-f="low">하</button>
+    <div class="spacer"></div>
+    <button class="clear-done" onclick="clearDone()">완료 삭제</button>
+  </div>
+
+  <div id="taskContainer"></div>
+</div>
+
+<script>
+  let tasks = []; // 이제 로컬 스토리지가 아닌 DB에서 가져옵니다!
+  let selectedPrio = 'high';
+  let activeFilter = 'all';
+
+  // 🚀 최초 실행 시 DB에서 데이터 불러오기
+  window.onload = () => {
+    fetchTodos();
+  };
+
+  async function fetchTodos() {
+    try {
+      const response = await fetch('/api/todos');
+      tasks = await response.json();
+      // 최신순으로 정렬 (ID 내림차순)
+      tasks.sort((a, b) => b.id - a.id);
+      render();
+    } catch (error) {
+      console.error("DB 로드 실패:", error);
+    }
+  }
+
+  // Priority btn selection
+  document.querySelectorAll('.prio-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      selectedPrio = btn.dataset.p;
+    });
+  });
+
+  // Filter btn selection
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      activeFilter = btn.dataset.f;
+      render();
+    });
+  });
+
+  // Enter key
+  document.getElementById('taskInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') addTask();
+  });
+
+  function getCsrfHeaders() {
+    const token = document.querySelector('meta[name="_csrf"]').content;
+    const header = document.querySelector('meta[name="_csrf_header"]').content;
+    return {
+      'Content-Type': 'application/json',
+      [header]: token
+    };
+  }
+
+  // 🚀 DB에 항목 추가하기 (POST)
+  async function addTask() {
+    const input = document.getElementById('taskInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const newTask = {
+      text: text,
+      priority: selectedPrio,
+      done: false,
+      date: new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+    };
+
+    try {
+      await fetch('/api/todos', {
+        method: 'POST',
+        headers: getCsrfHeaders(),
+        body: JSON.stringify(newTask)
+      });
+      input.value = '';
+      fetchTodos(); // 추가 후 다시 불러와서 렌더링
+    } catch (error) {
+      console.error("추가 실패:", error);
+    }
+  }
+
+  // 🚀 DB에서 상태 토글 (PUT)
+  async function toggleTask(id) {
+    const t = tasks.find(t => t.id === id);
+    if (!t) return;
+    
+    try {
+      await fetch(`/api/todos/${id}`, {
+        method: 'PUT',
+        headers: getCsrfHeaders(),
+        body: JSON.stringify({ done: !t.done })
+      });
+      fetchTodos();
+    } catch (error) {
+      console.error("수정 실패:", error);
+    }
+  }
+
+  // 🚀 DB에서 삭제 (DELETE)
+  async function deleteTask(id) {
+    try {
+      await fetch(`/api/todos/${id}`, { method: 'DELETE', headers: getCsrfHeaders() });
+      fetchTodos();
+    } catch (error) {
+      console.error("삭제 실패:", error);
+    }
+  }
+
+  // 🚀 완료 항목 일괄 삭제 (DELETE)
+  async function clearDone() {
+    try {
+      await fetch('/api/todos/done', { method: 'DELETE', headers: getCsrfHeaders() });
+      fetchTodos();
+    } catch (error) {
+      console.error("일괄 삭제 실패:", error);
+    }
+  }
+
+  function filterTasks(list) {
+    if (activeFilter === 'todo') return list.filter(t => !t.done);
+    if (activeFilter === 'done') return list.filter(t => t.done);
+    if (activeFilter === 'high') return list.filter(t => t.priority === 'high');
+    if (activeFilter === 'mid') return list.filter(t => t.priority === 'mid');
+    if (activeFilter === 'low') return list.filter(t => t.priority === 'low');
+    return list;
+  }
+
+  function render() {
+    const container = document.getElementById('taskContainer');
+    const filtered = filterTasks(tasks);
+
+    const done = tasks.filter(t => t.done).length;
+    document.getElementById('stats').textContent = `${done} / ${tasks.length} 완료`;
+    const pct = tasks.length ? (done / tasks.length) * 100 : 0;
+    document.getElementById('progressBar').style.width = pct + '%';
+
+    const sections = [
+      { key: 'high', label: '상 · 중요', cls: 'high' },
+      { key: 'mid',  label: '중 · 보통', cls: 'mid' },
+      { key: 'low',  label: '하 · 여유', cls: 'low' },
+    ];
+
+    let html = '';
+    const showSections = ['all','todo','done'].includes(activeFilter);
+
+    if (showSections) {
+      sections.forEach(sec => {
+        const items = filtered.filter(t => t.priority === sec.key);
+        html += `<div class="section ${sec.cls}">
+          <div class="section-header">
+            <span class="section-label">${sec.label}</span>
+            <div class="section-line"></div>
+            <span class="section-count">${items.length}</span>
+          </div>
+          <div class="task-list">${renderItems(items, sec.key)}</div>
+        </div>`;
+      });
+    } else {
+      const pCls = activeFilter;
+      const pLabel = { high:'상 · 중요', mid:'중 · 보통', low:'하 · 여유' }[pCls];
+      html = `<div class="section ${pCls}">
+        <div class="section-header">
+          <span class="section-label">${pLabel}</span>
+          <div class="section-line"></div>
+          <span class="section-count">${filtered.length}</span>
+        </div>
+        <div class="task-list">${renderItems(filtered, pCls)}</div>
+      </div>`;
+    }
+
+    container.innerHTML = html;
+  }
+
+  function renderItems(items, pCls) {
+    if (!items.length) return `<div class="empty-msg">항목이 없습니다</div>`;
+    return items.map(t => `
+      <div class="task-item${t.done ? ' done' : ''}">
+        <label class="check-wrap">
+          <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTask(${t.id})">
+          <div class="checkmark">
+            <svg width="12" height="10" viewBox="0 0 12 10" fill="none">
+              <path d="M1 5l3.5 3.5L11 1" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </label>
+        <span class="task-text">${escapeHtml(t.text)}</span>
+        <span class="task-date">${t.date}</span>
+        <button class="delete-btn" onclick="deleteTask(${t.id})" title="삭제">×</button>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+</script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}">
+
+  <head>
+    <title th:text="${stockInfo.name()} + ' 주문 | STOCK LAB'">주문</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}" />
+    <style>
+      .board-page {
+        padding: 0;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .top-header {
+        padding: 1.25rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .top-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 800;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      @media(min-width: 1024px) {
+        .board-page {
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 2rem 1rem;
+        }
+
+        .pc-header-wrap {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-bottom: 2rem;
+        }
+
+        .top-header {
+          padding: 0;
+        }
+
+        .top-header h2 {
+          font-size: 1.5rem;
+        }
+      }
+
+      .order-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-base);
+        border-radius: 1.25rem;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .tab-btn {
+        flex: 1;
+        padding: .6rem;
+        border-radius: .65rem;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: var(--text-muted);
+        transition: all .2s;
+      }
+
+      .tab-buy {
+        background: rgba(34, 197, 94, .12);
+        color: #16a34a;
+      }
+
+      .tab-sell {
+        background: rgba(239, 68, 68, .1);
+        color: #ef4444;
+      }
+
+      .o-input {
+        height: 46px;
+        width: 100%;
+        padding: 0 .875rem;
+        border-radius: .75rem;
+        border: 1px solid var(--border-base);
+        background: var(--bg-surface-2);
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        transition: border .2s, box-shadow .2s;
+      }
+
+      .o-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent-light);
+      }
+
+      .o-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .07em;
+        color: var(--text-muted);
+        margin-bottom: 5px;
+      }
+
+      .up {
+        color: #22c55e !important;
+      }
+
+      .down {
+        color: #ef4444 !important;
+      }
+    </style>
+  </head>
+  <span layout:fragment="page-title" style="display:none;" th:text="${stockInfo.symbol()}">Order</span>
+
+  <div layout:fragment="content">
+    <div class="board-page">
+      <div class="pc-header-wrap">
+        <div class="top-header" style="width: 100%;">
+          <div style="display:flex; align-items:baseline; gap: 1rem;">
+            <h2>주문하기</h2>
+            <span style="font-size:12px; font-weight:700; color:var(--text-muted);"
+              th:text="${market=='US'} ? '🇺🇸 미국 계좌' : '🇰🇷 한국 계좌'"></span>
+          </div>
+          <div class="header-actions">
+            <a th:href="@{/trading(market=${market})}" class="btn btn-ghost"
+              style="padding:0.4rem 0.8rem; font-size:12px;">← 대시보드</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding: 1rem; max-width: 600px; width: 100%; margin: 0 auto;">
+        <!-- 종목 정보 -->
+        <div class="order-card" style="padding:1.5rem;margin-bottom:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem;">
+            <div>
+              <h2 style="font-size:1.1rem;font-weight:800;color:var(--text-primary);word-break:keep-all;"
+                th:text="${stockInfo.name()}">종목명
+              </h2>
+              <p style="font-size:11px;color:var(--text-muted);"
+                th:text="${stockInfo.symbol()} + ' · ' + ${stockInfo.currency()}"></p>
+            </div>
+            <div style="text-align:right;">
+              <div id="livePrice" style="font-size:1.4rem;font-weight:800;color:var(--text-primary);"
+                th:text="${stockInfo.currencySymbol()} + ${#numbers.formatDecimal(stockInfo.price(),1,'COMMA',2,'POINT')}">
+                $0</div>
+              <span style="font-size:12px;font-weight:700;"
+                th:classappend="${stockInfo.changePercent() >= 0} ? 'up' : 'down'"
+                th:text="${stockInfo.changePercent() >= 0 ? '+' : ''} + ${#numbers.formatDecimal(stockInfo.changePercent(),1,'COMMA',2,'POINT')} + '%'">0%</span>
+            </div>
+          </div>
+          <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border-base);display:flex;gap:2rem;">
+            <div>
+              <p class="o-label">보유 현금</p>
+              <p style="font-size:13px;font-weight:700;color:var(--text-primary);"
+                th:text="${account.currencySymbol} + ${#numbers.formatDecimal(account.cash,1,'COMMA',2,'POINT')}">$0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 차트 영역 (TradingView) -->
+        <div class="order-card" style="margin-bottom:1rem; overflow:hidden; height: 320px;">
+          <!-- TradingView Widget BEGIN -->
+          <div class="tradingview-widget-container" style="height:100%; width:100%">
+            <div id="tradingview_chart" style="height:100%; width:100%"></div>
+          </div>
+          <!-- TradingView Widget END -->
+        </div>
+
+        <!-- 주문 폼 -->
+        <div class="order-card" style="overflow:hidden;">
+          <div
+            style="display:flex;gap:.25rem;padding:.75rem;border-bottom:1px solid var(--border-base);background:var(--bg-surface-2);">
+            <button class="tab-btn tab-buy" id="tabBuy" onclick="setTab('BUY')">매수</button>
+            <button class="tab-btn" id="tabSell" onclick="setTab('SELL')">매도</button>
+          </div>
+
+          <form id="orderForm" th:action="@{/trading/trade}" method="post"
+            style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;">
+            <input type="hidden" name="symbol" th:value="${stockInfo.symbol()}" />
+            <input type="hidden" name="companyName" th:value="${stockInfo.name()}" />
+            <input type="hidden" name="marketType" th:value="${market}" />
+            <input type="hidden" name="tradeType" id="tradeTypeInput" value="BUY" />
+
+            <!-- 주문 방식 -->
+            <div>
+              <p class="o-label">주문 방식</p>
+              <div style="display:flex;gap:.5rem;">
+                <label
+                  style="flex:1;display:flex;align-items:center;gap:.4rem;padding:.6rem .875rem;border-radius:.75rem;border:1px solid var(--border-base);background:var(--bg-surface-2);cursor:pointer;font-size:13px;font-weight:600;color:var(--text-secondary);">
+                  <input type="radio" name="orderType" value="MARKET" checked onchange="toggleLimit()"
+                    style="accent-color:var(--accent);"> 시장가
+                </label>
+                <label
+                  style="flex:1;display:flex;align-items:center;gap:.4rem;padding:.6rem .875rem;border-radius:.75rem;border:1px solid var(--border-base);background:var(--bg-surface-2);cursor:pointer;font-size:13px;font-weight:600;color:var(--text-secondary);">
+                  <input type="radio" name="orderType" value="LIMIT" onchange="toggleLimit()"
+                    style="accent-color:var(--accent);"> 지정가
+                </label>
+              </div>
+            </div>
+
+            <!-- 지정가 입력 -->
+            <div id="limitRow" style="display:none;">
+              <p class="o-label">지정가</p>
+              <input type="number" name="price" id="limitPrice" class="o-input" placeholder="목표 가격" step="0.01" min="0"
+                th:value="${stockInfo.price()}" oninput="calcTotal()" />
+            </div>
+            <input type="hidden" name="price" id="marketPrice" th:value="${stockInfo.price()}" />
+
+            <!-- 수량 -->
+            <div>
+              <p class="o-label">수량 (주)</p>
+              <div style="display:flex;gap:.4rem;align-items:center;">
+                <button type="button" onclick="adj(-1)"
+                  style="width:40px;height:46px;border-radius:.65rem;border:1px solid var(--border-base);background:var(--bg-surface-2);color:var(--text-primary);font-size:1.3rem;cursor:pointer;">−</button>
+                <input type="number" name="quantity" id="qtyInput" class="o-input" min="1" value="1"
+                  style="text-align:center;" oninput="calcTotal()" />
+                <button type="button" onclick="adj(1)"
+                  style="width:40px;height:46px;border-radius:.65rem;border:1px solid var(--border-base);background:var(--bg-surface-2);color:var(--text-primary);font-size:1.3rem;cursor:pointer;">+</button>
+              </div>
+            </div>
+
+            <!-- 예상 금액 -->
+            <div
+              style="padding:.75rem 1rem;border-radius:.75rem;background:var(--bg-surface-2);border:1px solid var(--border-base);">
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+                <span style="color:var(--text-muted);">예상 금액</span>
+                <span id="estTotal" style="font-weight:800;font-size:14px;color:var(--text-primary);">$0</span>
+              </div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-lg"
+              style="margin-top:.25rem;font-size:14px;background:#22c55e;border-color:#22c55e;">
+              매수 주문
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <th:block layout:fragment="script">
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    <script th:inline="javascript">
+      document.addEventListener('DOMContentLoaded', function () {
+        const symbol = /*[[${stockInfo.symbol()}]]*/ 'AAPL';
+        const market = /*[[${market}]]*/ 'US';
+        const tvSymbol = market === 'US' ? symbol : 'KRX:' + symbol;
+
+        new TradingView.widget({
+          "autosize": true,
+          "symbol": tvSymbol,
+          "interval": "D",
+          "timezone": "Asia/Seoul",
+          "theme": "dark",
+          "style": "1", // 1: 캔들, 2: 선형, 3: 영역
+          "locale": "kr",
+          "enable_publishing": false,
+          "backgroundColor": "#171717", // var(--bg-surface) 어두운 톤 매칭
+          "gridColor": "rgba(42, 46, 57, 0.06)",
+          "hide_top_toolbar": true,
+          "hide_legend": true,
+          "save_image": false,
+          "container_id": "tradingview_chart"
+        });
+      });
+
+      const CURRENT_PRICE = parseFloat(/*[[${stockInfo.price()}]]*/ 0);
+      const CUR_SYMBOL = /*[[${stockInfo.currencySymbol()}]]*/ '$';
+      let tab = 'BUY';
+
+      function setTab(t) {
+        tab = t;
+        document.getElementById('tradeTypeInput').value = t;
+        const b = document.getElementById('tabBuy');
+        const s = document.getElementById('tabSell');
+        const submit = document.getElementById('submitBtn');
+        if (t === 'BUY') {
+          b.classList.add('tab-buy'); s.classList.remove('tab-sell');
+          submit.style.cssText = 'background:#22c55e;border-color:#22c55e;font-size:14px;';
+          submit.textContent = '매수 주문';
+        } else {
+          s.classList.add('tab-sell'); b.classList.remove('tab-buy');
+          submit.style.cssText = 'background:#ef4444;border-color:#ef4444;font-size:14px;';
+          submit.textContent = '매도 주문';
+        }
+        calcTotal();
+      }
+
+      function toggleLimit() {
+        const isLimit = document.querySelector('input[name="orderType"]:checked').value === 'LIMIT';
+        document.getElementById('limitRow').style.display = isLimit ? 'block' : 'none';
+        document.getElementById('limitPrice').disabled = !isLimit;
+        document.getElementById('marketPrice').disabled = isLimit;
+        calcTotal();
+      }
+
+      function adj(d) {
+        const el = document.getElementById('qtyInput');
+        el.value = Math.max(1, parseInt(el.value || 1) + d);
+        calcTotal();
+      }
+
+      function calcTotal() {
+        const isLimit = document.querySelector('input[name="orderType"]:checked').value === 'LIMIT';
+        const price = isLimit ? parseFloat(document.getElementById('limitPrice').value || 0) : CURRENT_PRICE;
+        const qty = parseInt(document.getElementById('qtyInput').value || 0);
+        document.getElementById('estTotal').textContent =
+          CUR_SYMBOL + (price * qty).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+      }
+
+      // 30초마다 실시간 가격 갱신
+      const SYMBOL = document.querySelector('input[name="symbol"]').value;
+      const MARKET = document.querySelector('input[name="marketType"]').value;
+      async function refreshPrice() {
+        try {
+          const res = await fetch(`/api/trading/price?symbol=${SYMBOL}&market=${MARKET}`);
+          const data = await res.json();
+          if (data.price) {
+            document.getElementById('livePrice').textContent =
+              data.currencySymbol + Number(data.price).toLocaleString('ko-KR', { maximumFractionDigits: 2 });
+            document.getElementById('marketPrice').value = data.price;
+            calcTotal();
+          }
+        } catch (e) { }
+      }
+      setInterval(refreshPrice, 30_000);
+      calcTotal(); toggleLimit();
+    </script>
+  </th:block>
+</div>

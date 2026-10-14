@@ -1,0 +1,358 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}">
+
+  <head>
+    <title>예측 엔진 | TradingCrews:트루</title>
+    <style>
+      .prediction-card-glow {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 15rem;
+        height: 15rem;
+        background: radial-gradient(circle at center, var(--accent-glow) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        pointer-events: none;
+        z-index: 0;
+      }
+      .prediction-card:hover .prediction-card-glow {
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+
+  <span layout:fragment="page-title">Prediction Hub</span>
+
+  <div layout:fragment="content">
+    <div class="max-w-[1440px] mx-auto px-4 md:px-8 py-8 md:py-16 animate-fade-in overflow-x-hidden">
+    
+    <!-- Hero Section -->
+    <div class="mb-12 md:mb-20 text-center relative">
+        <div class="absolute inset-0 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+        <h2 class="font-display font-black text-3xl md:text-5xl mb-4 tracking-tighter" style="color: var(--text-primary)">
+            Market <span style="color: var(--accent)">Forecast</span>
+        </h2>
+        <p class="text-[11px] md:text-base font-medium max-w-xl mx-auto leading-relaxed opacity-70" style="color: var(--text-muted)">
+            실시간 데이터를 기반으로 시장의 흐름을 예측하세요.<br class="hidden md:block">
+            당신의 통찰력이 보상으로 증명되는 공간입니다.
+        </p>
+        
+        <!-- Timeline Info -->
+        <div class="mt-8 md:mt-12 inline-flex flex-wrap justify-center gap-1 p-1 rounded-2xl md:rounded-3xl border shadow-2xl" style="background: var(--bg-surface-2); border-color: var(--border-base)">
+            <div class="px-5 md:px-8 py-3 md:py-4 text-center">
+                <span class="block text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] mb-1" style="color: var(--text-muted)">Start</span>
+                <span class="block text-[11px] md:text-xs font-black" style="color: var(--accent)">09:00 AM</span>
+            </div>
+            <div class="px-5 md:px-8 py-3 md:py-4 text-center border-x" style="border-color: var(--border-base)">
+                <span class="block text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] mb-1" style="color: var(--text-muted)">Deadline</span>
+                <span class="block text-[11px] md:text-xs font-black text-amber-500">22:00 PM</span>
+            </div>
+            <div class="px-5 md:px-8 py-3 md:py-4 text-center">
+                <span class="block text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] mb-1" style="color: var(--text-muted)">Settlement</span>
+                <span class="block text-[11px] md:text-xs font-black text-emerald-500">08:00 AM</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Feed Section -->
+    <div class="relative">
+        <div class="flex items-center gap-4 mb-8 md:mb-12">
+            <h3 class="font-display font-black text-[10px] md:text-xs uppercase tracking-[0.4em]" style="color: var(--accent)">● Active Feed</h3>
+            <div class="h-px flex-1 bg-gradient-to-r from-[var(--border-base)] to-transparent"></div>
+        </div>
+
+        <div id="prediction-list" class="grid grid-cols-1 gap-6 md:gap-10">
+            <div class="flex justify-center py-32">
+                <div class="loader-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="mt-20 md:mt-32">
+        <div class="flex items-center gap-4 mb-8">
+            <h3 class="font-display font-black text-[10px] md:text-xs uppercase tracking-[0.4em]" style="color: var(--text-muted)">○ Archived Results</h3>
+            <div class="h-px flex-1 bg-gradient-to-r from-[var(--border-base)] to-transparent"></div>
+        </div>
+        
+        <div id="settled-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <!-- Results load here -->
+        </div>
+    </div>
+
+    </div>
+    <!-- animate-fade-in 래퍼 종료 -->
+
+    <!-- Bet Modal -->
+    <div id="bet-modal" class="fixed inset-0 z-[200] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300" onclick="closeBetModal()"></div>
+        <div class="relative w-full max-w-sm glass-panel rounded-[2rem] md:rounded-[3rem] p-8 md:p-10 shadow-2xl scale-95 opacity-0 transition-all duration-300" 
+             id="modal-content" style="background: var(--bg-surface); border-color: var(--border-base)">
+            
+            <div class="text-center mb-8">
+                <span class="inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest mb-4" 
+                      style="background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-light)">Strategy Selection</span>
+                <h3 class="font-display font-black text-2xl md:text-3xl tracking-tight mb-2" style="color: var(--text-primary)">Stake Your Claim</h3>
+                <p id="selected-option-name" class="font-black text-xs md:text-sm uppercase tracking-widest" style="color: var(--accent)">Option Name</p>
+            </div>
+            
+            <div class="space-y-6">
+                <div class="main-inset rounded-2xl p-5" style="background: var(--bg-surface-2)">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-[9px] font-bold uppercase tracking-widest opacity-50" style="color: var(--text-primary)">Stake (TP)</label>
+                        <span class="text-[9px] font-black text-emerald-500 uppercase tracking-widest">MIN 100</span>
+                    </div>
+                    <div class="relative">
+                        <input type="number" id="bet-amount" value="100" step="100" min="100"
+                               class="w-full bg-transparent font-display font-black text-3xl md:text-4xl text-center focus:outline-none transition-all tabular-nums"
+                               style="color: var(--text-primary)">
+                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-1 bg-accent/20 rounded-full"></div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-2">
+                    <button onclick="setAmount(100)" class="py-3 text-[10px] font-black rounded-xl border transition-all hover:bg-accent hover:border-accent hover:text-white" 
+                            style="background: var(--bg-surface-2); color: var(--text-secondary); border-color: var(--border-base)">100</button>
+                    <button onclick="setAmount(500)" class="py-3 text-[10px] font-black rounded-xl border transition-all hover:bg-accent hover:border-accent hover:text-white" 
+                            style="background: var(--bg-surface-2); color: var(--text-secondary); border-color: var(--border-base)">500</button>
+                    <button onclick="setAmount(1000)" class="py-3 text-[10px] font-black rounded-xl border transition-all hover:bg-accent hover:border-accent hover:text-white" 
+                            style="background: var(--bg-surface-2); color: var(--text-secondary); border-color: var(--border-base)">1K</button>
+                    <button onclick="setAmount(5000)" class="py-3 text-[10px] font-black rounded-xl border transition-all hover:bg-accent hover:border-accent hover:text-white" 
+                            style="background: var(--bg-surface-2); color: var(--text-secondary); border-color: var(--border-base)">5K</button>
+                </div>
+
+                <div class="pt-4">
+                    <button onclick="submitBet()" class="w-full py-4.5 md:py-5 bg-accent text-white font-black rounded-2xl shadow-xl transition-all hover:scale-[1.02] active:scale-95 text-xs md:text-sm uppercase tracking-[0.2em] shadow-blue-500/20">Confirm Execution</button>
+                </div>
+            </div>
+            
+            <button onclick="closeBetModal()" class="absolute top-6 right-6 opacity-30 hover:opacity-100 transition-opacity" style="color: var(--text-primary)">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" stroke-width="3"/></svg>
+            </button>
+        </div>
+    </div>
+
+  </div>
+
+  <th:block layout:fragment="script">
+    <script>
+        let currentOptionId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPredictions();
+            loadSettledResults();
+        });
+
+        async function loadPredictions() {
+            try {
+                const response = await fetch('/api/prediction/questions');
+                const questions = await response.json();
+                renderQuestions(questions);
+            } catch (error) {
+                console.error('Failed to load predictions:', error);
+            }
+        }
+
+        function renderQuestions(questions) {
+            const list = document.getElementById('prediction-list');
+            if (questions.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-20 border-2 border-dashed rounded-[3rem] opacity-30" style="border-color: var(--border-base)">
+                        <span class="text-5xl block mb-4">🔭</span>
+                        <p class="font-black uppercase tracking-widest text-xs">Waiting for market signals...</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = questions.map(q => {
+                const isMarketKR = q.marketType === 'KR';
+                const marketTag = isMarketKR ? 'KOSPI' : 'NASDAQ';
+                const marketColor = isMarketKR ? 'emerald' : 'sky';
+
+                return `
+                <div class="prediction-card glass-panel rounded-[2rem] md:rounded-[3.5rem] p-6 md:p-12 border transition-all group relative overflow-hidden flex flex-col md:flex-row gap-8 items-stretch shadow-2xl" 
+                     style="background: var(--bg-card); border-color: var(--border-base)">
+                    <div class="prediction-card-glow"></div>
+                    
+                    <div class="flex-1 relative z-10">
+                        <div class="flex flex-wrap items-center gap-3 mb-4 md:mb-6">
+                            <span class="px-3 py-1 bg-accent/10 text-accent text-[9px] font-black rounded-lg border border-accent/20 uppercase tracking-widest inline-flex items-center gap-1.5 shadow-sm">
+                                <span class="w-1.5 h-1.5 bg-accent rounded-full animate-pulse"></span> LIVE NOW
+                            </span>
+                            <span class="px-3 py-1 rounded-lg text-[9px] font-black tracking-widest border opacity-60" style="background: var(--bg-surface-2); border-color: var(--border-base); color: var(--text-primary)">${marketTag}</span>
+                        </div>
+                        <h3 class="font-display font-black text-xl md:text-3xl tracking-tight leading-tight mb-6 md:mb-8" style="color: var(--text-primary)">${q.title}</h3>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            ${q.options.map(o => {
+                                const ratio = q.totalPool > 0 ? (o.optionPool / q.totalPool * 100).toFixed(1) : 0;
+                                return `
+                                    <div class="space-y-2.5">
+                                        <button 
+                                            onclick="openBetModal(${o.id}, '${o.content}')"
+                                            class="auth-required w-full rounded-2xl border flex justify-between items-center transition-all bg-opacity-40 hover:bg-opacity-100 hover:scale-[1.02] active:scale-95 group/btn"
+                                            style="background: var(--bg-surface-2); border-color: var(--border-base); color: var(--text-primary); padding: 1vh;">
+                                            <span class="font-bold text-[12px] md:text-sm group-hover/btn:text-accent transition-colors">${o.content}</span>
+                                            <span class="text-[10px] md:text-xs font-black tabular-nums opacity-60 underline decoration-accent underline-offset-4">${ratio}%</span>
+                                        </button>
+                                        <div class="px-1">
+                                            <div class="h-1 w-full bg-slate-500/10 rounded-full overflow-hidden shadow-inner">
+                                                <div class="h-full bg-accent blue-glow rounded-full transition-all duration-1000 ease-out" style="width: ${ratio}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    <div class="md:w-56 flex flex-col justify-center items-center md:items-end md:border-l pl-0 md:pl-10 relative z-10" style="border-color: var(--border-base)">
+                        <p class="text-[9px] font-black uppercase tracking-[0.2em] mb-2 opacity-40" style="color: var(--text-muted)">Total Staked</p>
+                        <div class="flex items-baseline gap-1 mb-6">
+                            <span class="text-3xl md:text-4xl font-display font-black tabular-nums" style="color: var(--text-primary)">${q.totalPool.toLocaleString()}</span>
+                            <span class="text-[10px] font-black text-accent">TP</span>
+                        </div>
+                        <div class="hidden md:flex flex-col items-end opacity-20 group-hover:opacity-100 transition-opacity">
+                            <p class="text-[8px] font-bold uppercase tracking-widest text-right mb-1">Decentralized Prediction</p>
+                            <div class="flex gap-1">
+                                <span class="w-1 h-1 rounded-full bg-accent"></span>
+                                <span class="w-10 h-1 rounded-full bg-accent/20"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        async function loadSettledResults() {
+            try {
+                const response = await fetch('/api/prediction/settled-questions');
+                const questions = await response.json();
+                renderSettledResults(questions);
+            } catch (error) {
+                console.error('Failed to load settled results:', error);
+            }
+        }
+
+        function renderSettledResults(questions) {
+            const list = document.getElementById('settled-list');
+            if (questions.length === 0) {
+                list.innerHTML = `<div class="col-span-full text-center py-10 opacity-20 italic text-[10px] font-bold uppercase tracking-widest">Archive Vault Empty</div>`;
+                return;
+            }
+
+            list.innerHTML = questions.map(q => {
+                const winner = q.options.find(o => o.isWinner);
+                return `
+                <div class="border rounded-2xl md:rounded-3xl p-5 md:p-6 transition-all hover:translate-y-[-2px] hover:shadow-xl flex flex-col justify-between" 
+                     style="background: var(--bg-card); border-color: var(--border-base)">
+                    <div class="mb-4">
+                        <div class="flex items-center gap-2 mb-2 opacity-40">
+                             <span class="text-[9px] font-black tabular-nums" style="color: var(--text-muted)">${q.createdAt.split(' ')[0]}</span>
+                             <span class="w-1 h-1 rounded-full bg-current"></span>
+                             <span class="text-[9px] font-black uppercase tracking-tighter" style="color: var(--accent)">Verified Result</span>
+                        </div>
+                        <h4 class="font-black text-[13px] md:text-sm leading-snug mb-3" style="color: var(--text-primary)">${q.title}</h4>
+                        <div class="p-3 rounded-xl border-t border-dashed" style="border-color: var(--border-base)">
+                            <p class="text-[10px] font-medium italic opacity-60" style="color: var(--text-muted)">"${q.resultMessage || 'Aggregate Finalized'}"</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-auto">
+                        <span class="text-[9px] font-bold uppercase tracking-widest opacity-30" style="color: var(--text-muted)">Winning Strategy</span>
+                        <span class="px-3 py-1.5 bg-emerald-500/10 text-emerald-500 text-[10px] font-black rounded-lg border border-emerald-500/20 shadow-sm">${winner ? winner.content : 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        function openBetModal(id, content) {
+            if (!IS_LOGGED_IN) {
+                showConfirmModal('로그인 필요', '로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?', () => {
+                    window.location.href = '/login?redirectURL=/prediction';
+                });
+                return;
+            }
+            currentOptionId = id;
+            document.getElementById('selected-option-name').textContent = content;
+            const modal = document.getElementById('bet-modal');
+            const inner = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => {
+                inner.classList.remove('opacity-0', 'scale-95');
+                inner.classList.add('opacity-100', 'scale-100');
+            }, 10);
+        }
+
+        function closeBetModal() {
+            const modal = document.getElementById('bet-modal');
+            const inner = document.getElementById('modal-content');
+            inner.classList.remove('opacity-100', 'scale-100');
+            inner.classList.add('opacity-0', 'scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                document.body.style.overflow = '';
+            }, 300);
+        }
+
+        function setAmount(amt) {
+            document.getElementById('bet-amount').value = amt;
+        }
+
+        async function submitBet() {
+            const amount = parseInt(document.getElementById('bet-amount').value);
+            if (isNaN(amount) || amount < 100) {
+                alert('최소 베팅 금액은 100 TP입니다.');
+                return;
+            }
+
+            try {
+                const csrfTokenMeta = document.querySelector('meta[name="_csrf"]');
+                const csrfHeaderMeta = document.querySelector('meta[name="_csrf_header"]');
+                
+                const headers = { 'Content-Type': 'application/json' };
+                if (csrfTokenMeta && csrfHeaderMeta) {
+                    headers[csrfHeaderMeta.content] = csrfTokenMeta.content;
+                }
+
+                const response = await fetch('/api/prediction/bet', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({ optionId: currentOptionId, amount: amount })
+                });
+
+                if (response.ok) {
+                    alert('성공적으로 참여되었습니다.');
+                    closeBetModal();
+                    loadPredictions();
+                } else {
+                    const error = await response.text();
+                    alert('참여 실패: ' + error);
+                }
+            } catch (error) {
+                alert('시스템 오류가 발생했습니다.');
+            }
+        }
+    </script>
+    <style>
+      .animate-fade-in {
+        animation: fadeIn 0.8s ease-out forwards;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      /* 소수점 없는 경우를 위한 애니메이션 스무딩 */
+      .prediction-card {
+        backface-visibility: hidden;
+      }
+    </style>
+  </th:block>
+
+</div>

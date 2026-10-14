@@ -1,0 +1,259 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
+  <head>
+    <title>글 작성 | TradingCrews:트루</title>
+    <!-- [WYSIWYG] Summernote Lite (jQuery 기반) 도입 -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/summernote@0.8.18/dist/summernote-lite.min.js"></script>
+    <style>
+      /* Summernote Premium 커스텀 스타일 (이미지 완벽 매칭) */
+      .note-editor.note-frame {
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 1.5rem !important;
+          background-color: #090E18 !important;
+          overflow: hidden;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.4) !important;
+      }
+      .note-toolbar {
+          background-color: #0E1620 !important;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+          padding: 8px 16px !important;
+          display: flex !important;
+          align-items: center !important;
+          flex-wrap: wrap !important;
+      }
+      .note-btn-group {
+          margin-right: 12px !important;
+          display: flex !important;
+          align-items: center !important;
+          gap: 2px !important;
+      }
+      .note-btn {
+          background-color: transparent !important;
+          border: 1px solid transparent !important;
+          color: #ffffff !important;
+          width: 34px !important;
+          height: 34px !important;
+          padding: 0 !important;
+          border-radius: 8px !important;
+          transition: all 0.2s;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          font-size: 13px !important;
+      }
+      .note-btn:hover {
+          background-color: rgba(255, 255, 255, 0.1) !important;
+      }
+      .note-btn.active {
+          color: var(--accent) !important;
+          background-color: rgba(2, 166, 200, 0.1) !important;
+      }
+
+      /* 컬러 피커 (A) 아이콘 정밀화 (거대화 방지) */
+      .note-color .note-btn {
+          width: auto !important;
+          min-width: 34px !important;
+          padding: 0 4px !important;
+      }
+      .note-current-color-button {
+          padding-left: 8px !important;
+          padding-right: 8px !important;
+      }
+      .note-current-color-button i {
+          color: #ffff00 !important; /* 노란색 강조 아이콘 */
+          font-size: 15px !important;
+      }
+      .note-icon-caret {
+          font-size: 10px !important;
+          margin-left: 2px !important;
+          opacity: 0.5 !important;
+      }
+
+      .note-editable {
+          background-color: #090E18 !important;
+          color: #ffffff !important;
+          min-height: 450px !important;
+          padding: 30px !important;
+          font-size: 0.95rem !important;
+          line-height: 1.7 !important;
+          outline: none !important;
+      }
+
+      /* 드롭다운 및 모달 (불투명도 100% 보장) */
+      .note-dropdown-menu {
+          background-color: #0E1620 !important;
+          border: 1px solid rgba(255, 255, 255, 0.1) !important;
+          border-radius: 12px !important;
+          padding: 8px !important;
+          box-shadow: 0 15px 35px rgba(0,0,0,0.8) !important;
+          z-index: 10001 !important;
+          opacity: 1 !important;
+      }
+      .note-dropdown-item {
+          color: #ffffff !important;
+          padding: 8px 12px !important;
+          border-radius: 8px !important;
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          display: block !important;
+          text-decoration: none !important;
+      }
+      .note-dropdown-item:hover {
+          background-color: #02A6C8 !important;
+          color: #ffffff !important;
+      }
+
+      /* 컬러 팔레트 및 버튼 리셋 대응 (가시성 및 레이아웃 강화) */
+      .note-color-all {
+          background-color: #0E1620 !important;
+          padding: 16px !important;
+          border-radius: 12px !important;
+          opacity: 1 !important;
+          min-width: 280px !important; /* 10가지 색상이 한 줄에 나오도록 충분한 너비 확보 */
+      }
+      .note-color-palette {
+          width: 100% !important;
+          line-height: normal !important;
+      }
+      .note-color-row {
+          display: flex !important;
+          flex-direction: row !important;
+          flex-wrap: nowrap !important;
+          gap: 3px !important;
+          margin-bottom: 5px !important;
+          justify-content: space-between !important;
+      }
+      .note-color-palette .note-color-btn {
+          background-color: inherit !important;
+          width: 24px !important;
+          height: 24px !important;
+          border: 1px solid rgba(255,255,255,0.3) !important;
+          border-radius: 4px !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          cursor: pointer !important;
+          transition: transform 0.1s;
+      }
+      .note-color-palette .note-color-btn:hover {
+          transform: scale(1.15);
+          border-color: #ffffff !important;
+          z-index: 10;
+      }
+
+      .note-color-header {
+          color: #80E2F3 !important;
+          font-size: 11px !important;
+          font-weight: 800 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 0.1em !important;
+          margin-bottom: 12px !important;
+          border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+          padding-bottom: 6px !important;
+      }
+      .note-color-reset, .note-color-select {
+          background-color: #1B5F70 !important;
+          color: #ffffff !important;
+          border: none !important;
+          padding: 10px !important;
+          border-radius: 8px !important;
+          font-size: 11px !important;
+          font-weight: 800 !important;
+          width: 100% !important;
+          margin-top: 12px !important;
+          cursor: pointer !important;
+          transition: background 0.2s;
+      }
+      .note-color-reset:hover, .note-color-select:hover {
+          background-color: #02A6C8 !important;
+      }
+
+      .note-placeholder {
+          padding: 30px !important;
+          color: #4D5F8E !important;
+          font-weight: 500 !important;
+          opacity: 0.6 !important;
+      }
+      .note-status-output { display: none !important; }
+      .note-resizebar { display: none !important; }
+    </style>
+  </head>
+
+  <span layout:fragment="page-title">Publish Perspective</span>
+
+  <div layout:fragment="content" class="p-2 md:p-6 max-w-4xl mx-auto min-h-[calc(100vh-100px)]">
+      
+      <div class="mb-4 md:mb-6">
+          <a th:href="@{|/community/${currentBoard.id}|}" class="text-[11px] md:text-sm font-black flex items-center gap-1.5 transition-all group" style="color: var(--accent)">
+             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+             </svg>
+             Return to Board
+          </a>
+      </div>
+
+      <div class="border rounded-2xl md:rounded-3xl p-5 md:p-10 shadow-2xl relative overflow-hidden"
+           style="background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-muted) 100%); border-color: var(--border-base)">
+          <div class="absolute -top-20 -right-20 w-48 h-48 md:w-64 md:h-64 bg-emerald-600/10 rounded-full blur-2xl md:blur-3xl pointer-events-none"></div>
+
+          <div class="flex items-center gap-3 md:gap-4 mb-6 md:mb-10 border-b pb-4 md:pb-8" style="border-color: var(--border-base)">
+             <span class="text-3xl md:text-4xl drop-shadow-lg">📝</span>
+             <div>
+                <h1 class="text-xl md:text-3xl font-black tracking-tight" style="color: var(--text-primary)" th:text="${currentBoard.topicName} + ' Publish'">게시판 글 작성</h1>
+                <p class="text-[10px] md:text-xs font-medium italic mt-1.5" style="color: var(--text-muted)">당신의 가치 있는 한 마디가 커뮤니티의 힘이 됩니다.</p>
+             </div>
+          </div>
+
+          <form th:action="@{|/community/${currentBoard.id}/posts|}" method="post" class="flex flex-col gap-6 md:gap-8 relative z-10">
+              <div class="flex flex-col gap-3">
+                 <label for="content" class="px-1 text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em]" style="color: var(--text-muted)">Perspective / Content</label>
+                 <textarea id="content" name="content" required rows="10" placeholder="상호 존중하고 가치 있는 소통을 지향합니다."
+                    class="w-full text-xs md:text-sm p-5 md:p-6 rounded-2xl md:rounded-3xl border transition-all resize-none shadow-inner leading-relaxed focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+                    style="background: var(--bg-card); color: var(--text-primary); border-color: var(--border-base)"></textarea>
+                 <div class="flex items-start gap-2 px-1 opacity-60">
+                     <span class="text-xs">💡</span>
+                     <span class="text-[9px] md:text-[10px] font-medium leading-normal" style="color: var(--text-muted)">
+                         무분별한 광고, 비방, 도배 게시글은 운영진에 의해 제재될 수 있습니다. 쾌적한 커뮤니티 환경 조성에 동참해 주세요.
+                     </span>
+                 </div>
+              </div>
+
+              <div class="flex justify-end pt-4">
+                 <button type="submit" class="w-full md:w-auto px-8 md:px-12 py-3.5 md:py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-black rounded-xl md:rounded-2xl text-[12px] md:text-sm uppercase tracking-widest transition-all shadow-xl hover:scale-[1.02] active:scale-[0.98] shadow-emerald-500/20 flex justify-center items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Post Now
+                 </button>
+              </div>
+          </form>
+      </div>
+
+  <th:block layout:fragment="script">
+    <script>
+      $(document).ready(function() {
+        // 🌟 [WYSIWYG] Summernote Lite 초기화
+        $('#content').summernote({
+          placeholder: '상호 존중하고 가치 있는 소통을 지향합니다.',
+          tabsize: 2,
+          height: 450,
+          dialogsInBody: false,
+          toolbar: [
+            ['font', ['bold', 'italic', 'underline', 'clear']], // 2, 3, 4, 5번 유지
+            ['fontsize', ['fontsize']], // 6번 유지
+            ['color', ['forecolor']], // 7번 유지 (텍스트 컬러만)
+            ['insert', ['link', 'hr']], // 11, 12번 유지
+            ['view', ['undo', 'redo']] // 13, 14번 유지
+          ],
+          colors: [
+            ['#000000', '#ffffff', '#ff0000', '#0000ff', '#00ff00', '#ffff00', '#ffa500', '#800080', '#ff00ff', '#00ffff']
+          ],
+          fontSizes: ['8', '9', '10', '11', '12', '14', '16', '18', '24', '36'],
+          styleTags: ['p', 'h3', 'h4', 'blockquote'],
+          lang: 'ko-KR',
+          disableDragAndDrop: true
+        });
+      });
+    </script>
+  </th:block>
+</div>

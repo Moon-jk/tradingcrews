@@ -1,0 +1,90 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+
+# ==========================================
+# 🔐 0. 보안 파일 (가장 중요!!!)
+# ==========================================
+# 어떤 이름의 env 파일이든 무조건 깃허브 업로드 차단
+*.env
+.env
+secu.env
+*.env.properties
+.env.properties
+
+# ==========================================
+# 🐍 1. 파이썬 (Python) 관련 제외 파일
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==========================================
+# 🖼️ 2. Stock Lab 프로젝트 생성물 제외
+# ==========================================
+# 폴더 구조에 상관없이 해당 이름의 파일은 모두 무시
+**/output_images/
+**/static/output_*/
+**/result.json
+**/planning_data.json
+result.json
+planning_data.json
+
+# ==========================================
+# 💻 3. OS 및 에디터 찌꺼기 파일
+# ==========================================
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.vscode/

@@ -1,0 +1,55 @@
+<div xmlns:th="http://www.thymeleaf.org" 
+     xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+     layout:decorate="~{layout}">
+
+    <head>
+        <title>글로벌 매크로 모니터</title>
+    </head>
+
+    <span layout:fragment="page-title">지수</span>
+
+    <div layout:fragment="content">
+        <div class="px-8 pb-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div th:each="asset, stat : ${assets}" 
+                     class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl hover:border-blue-500/50 transition-all duration-300">
+                    
+                    <div class="px-4 py-3 bg-slate-800/50 flex justify-between items-center border-b border-slate-700/50">
+                        <span class="font-bold text-gray-100 text-lg" th:text="${asset.name}">자산명</span>
+                        <span class="text-[10px] text-blue-400 bg-blue-950/50 border border-blue-900/50 px-2 py-1 rounded font-mono" th:text="${asset.symbol}">SYMBOL</span>
+                    </div>
+                    
+                    <div th:id="'chart_id_' + ${stat.index}" class="h-[350px] w-full"></div>
+
+                    <script th:inline="javascript">
+                        (function() {
+                            const symbol = /*[[${asset.symbol}]]*/ '';
+                            const containerId = /*[['chart_id_' + ${stat.index}]]*/ '';
+                            
+                            function renderChart() {
+                                if (window.TradingView) {
+                                    new TradingView.widget({
+                                        "autosize": true,
+                                        "symbol": symbol,
+                                        "interval": "D",
+                                        "timezone": "Etc/UTC",
+                                        "theme": "dark",
+                                        "style": "1", 
+                                        "locale": "kr",
+                                        "toolbar_bg": "#1e293b",
+                                        "enable_publishing": false,
+                                        "hide_top_toolbar": false,
+                                        "save_image": false,
+                                        "container_id": containerId
+                                    });
+                                }
+                            }
+                            // 시차를 두고 렌더링하여 브라우저 부하 감소
+                            setTimeout(renderChart, 150 * /*[[${stat.index}]]*/ 0);
+                        })();
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

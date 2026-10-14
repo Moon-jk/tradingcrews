@@ -1,0 +1,46 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+    <span layout:fragment="page-title">Error</span>
+
+    <div layout:fragment="content" class="flex items-center justify-center" style="min-height: 60vh;">
+        <div class="text-center max-w-md mx-auto px-6">
+            <!-- 에러 코드 -->
+            <div class="mb-8">
+                <span class="text-8xl font-display font-black tracking-tighter"
+                      style="color: var(--accent); opacity: 0.2;"
+                      th:text="${statusCode ?: 500}">500</span>
+            </div>
+
+            <!-- 아이콘 -->
+            <div class="w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border"
+                 style="background: var(--bg-muted); border-color: var(--border-base)">
+                <svg class="w-10 h-10" style="color: var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+            </div>
+
+            <!-- 메시지 -->
+            <h2 class="text-2xl font-black mb-3" style="color: var(--text-primary)"
+                th:text="${errorMessage ?: '오류가 발생했습니다'}">오류가 발생했습니다</h2>
+            <p class="text-sm mb-10" style="color: var(--text-muted)">
+                문제가 지속되면 운영자에게 문의해주세요.
+            </p>
+
+            <!-- 액션 버튼 -->
+            <div class="flex gap-3 justify-center">
+                <a href="/"
+                   class="px-8 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all border shadow-lg text-white"
+                   style="background: var(--accent); border-color: var(--accent)">
+                    홈으로 돌아가기
+                </a>
+                <button onclick="history.back()"
+                        class="px-8 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all border"
+                        style="background: var(--bg-muted); color: var(--text-muted); border-color: var(--border-base)">
+                    뒤로 가기
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

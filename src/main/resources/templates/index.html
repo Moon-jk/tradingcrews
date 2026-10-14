@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" th:href="@{/favicon.png}" />
+    <title>TradingCrews:트루 - 프라이빗 투자 협업 플랫폼</title>
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2447378708832059"
+        crossorigin="anonymous"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Modern Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Custom Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            800: '#0E1620',
+                            900: '#090E18',
+                            950: '#040810',
+                        },
+                        point: {
+                            500: '#02A6C8',
+                            600: '#308097',
+                        },
+                        slate2: {
+                            DEFAULT: '#6275AC',
+                            500: '#6275AC',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Custom CSS layer for Glassmorphism and Effects -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass-panel {
+                background: rgba(15, 23, 42, 0.6);
+                backdrop-filter: blur(12px);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .glow-effect {
+                box-shadow: 0 0 45px -10px rgba(59, 130, 246, 0.35);
+            }
+            .mobile-menu-open {
+                overflow: hidden;
+            }
+        }
+        
+        body {
+            background-color: #0B0F19;
+            color: #F8FAFC;
+        }
+    </style>
+</head>
+
+<body class="font-sans antialiased flex flex-col min-h-screen selection:bg-point-500 selection:text-white">
+
+    <!-- 1. GNB (Global Navigation Bar) -->
+    <header class="fixed w-full top-0 z-50 glass-panel border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- Left: Logo -->
+                <div class="flex-shrink-0 flex items-center">
+                    <a th:href="@{/}" class="text-2xl font-extrabold tracking-tighter text-white">
+                        TradingCrews<span class="text-point-500">:트루</span>
+                    </a>
+                </div>
+
+                <!-- Center: Navigation Links (Desktop) -->
+                <nav class="hidden md:flex space-x-12" aria-label="데스크톱 네비게이션">
+                    <a th:href="@{/dashboard}"
+                        class="text-gray-300 hover:text-white font-medium transition-colors relative group">
+                        메인 대시보드
+                        <span
+                            class="absolute -bottom-7 left-0 w-full h-0.5 bg-point-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+                    </a>
+                    <a th:href="@{/infocenter/news}"
+                        class="text-gray-300 hover:text-white font-medium transition-colors relative group">
+                        뉴스
+                        <span
+                            class="absolute -bottom-7 left-0 w-full h-0.5 bg-point-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+                    </a>
+                    <a th:href="@{/notice}"
+                        class="text-gray-300 hover:text-white font-medium transition-colors relative group">
+                        공지사항
+                        <span
+                            class="absolute -bottom-7 left-0 w-full h-0.5 bg-point-500 scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
+                    </a>
+                </nav>
+
+                <!-- Right: Auth Buttons (Desktop) -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <a th:href="@{/login}"
+                        class="text-gray-300 hover:text-white font-medium transition-colors px-4 py-2">
+                        로그인
+                    </a>
+                    <a th:href="${session.loginMember == null ? '/crew/explore' : '/crew'}"
+                        class="bg-point-600 hover:bg-point-500 text-white font-semibold py-2.5 px-6 rounded-lg transition-all duration-200 shadow-lg shadow-point-500/20 hover:shadow-point-500/40 transform hover:-translate-y-0.5">
+                        크루 합류하기
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-button" aria-label="메뉴 열기"
+                        class="text-gray-300 hover:text-white focus:outline-none p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16M4 18h16"></path>
+                            <path id="close-icon" class="hidden" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu"
+            class="md:hidden fixed inset-0 top-20 z-40 bg-navy-900 border-t border-white/5 opacity-0 invisible transition-all duration-300 ease-in-out">
+            <div id="mobile-menu-inner"
+                class="flex flex-col p-6 h-[calc(80vh-5rem)] bg-navy-900 overflow-y-auto transform -translate-y-4 transition-transform duration-300 ease-in-out">
+                <nav class="flex flex-col space-y-1" aria-label="모바일 네비게이션">
+                    <a th:href="@{/dashboard}"
+                        class="text-lg font-bold text-white hover:text-point-500 transition-colors py-4 border-b border-white/5">대시보드</a>
+                    <a th:href="@{/infocenter/news}"
+                        class="text-lg font-bold text-white hover:text-point-500 transition-colors py-4 border-b border-white/5">뉴스</a>
+                    <a th:href="@{/notice}"
+                        class="text-lg font-bold text-white hover:text-point-500 transition-colors py-4 border-b border-white/5">공지사항</a>
+                </nav>
+                <div class="mt-auto py-10 flex flex-col space-y-4">
+                    <a th:href="@{/login}"
+                        class="text-center text-lg font-medium text-gray-300 py-3.5 rounded-xl border border-white/10 hover:bg-white/5 transition-colors">로그인</a>
+                    <a th:href="${session.loginMember == null ? '/crew/explore' : '/crew'}"
+                        class="text-center text-lg font-bold text-white py-4 rounded-xl bg-point-600 hover:bg-point-500 shadow-lg shadow-point-600/20 transition-all">크루
+                        합류하기</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow pt-20">
+
+        <!-- 2. Hero Section -->
+        <section class="relative pt-16 pb-20 md:pt-28 md:pb-32 overflow-hidden px-4">
+            <!-- Ambient Background Glow -->
+            <div
+                class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-[400px] bg-point-600/15 blur-[120px] rounded-full pointer-events-none">
+            </div>
+
+            <div class="max-w-7xl mx-auto relative z-10 text-center px-4 sm:px-6">
+                <h1 class="font-extrabold tracking-tight mb-8 leading-[1.15]">
+                    <span class="block text-white text-[clamp(2.2rem,8vw,4.3rem)] mb-3 break-keep">감정을 배제하고,</span>
+                    <span
+                        class="block text-transparent bg-clip-text bg-gradient-to-r from-point-500 to-blue-200 text-[clamp(1.75rem,6.5vw,4.3rem)] break-keep pb-1">전략을
+                        공유하며, 수익을 시스템화하십시오.</span>
+                </h1>
+
+                <p class="mt-8 max-w-3xl mx-auto text-base md:text-xl text-gray-400 leading-relaxed font-light px-2">
+                    글로벌 매크로, FX, 주식 뉴스를 단 하나의 화면에서. <br class="hidden sm:block">최대 7인으로 제한된 프라이빗 리서치 크루에서 진정한 전문가들과
+                    협업하십시오.
+                </p>
+
+                <div class="mt-12 flex flex-col sm:flex-row justify-center items-center gap-5 px-4 sm:px-0">
+                    <a th:href="${session.loginMember == null ? '/crew/explore' : '/crew'}"
+                        class="w-full sm:w-auto bg-point-600 hover:bg-point-500 text-white font-bold px-12 rounded-[3rem] transition-all duration-300 shadow-[0_20px_40px_-10px_rgba(2,166,200,0.4)] text-[1.2rem] leading-[3rem] sm:text-[1.6rem] sm:leading-[4rem] hover:scale-105 active:scale-95 text-center">
+                        트레이딩크루 합류하기
+                    </a>
+                    <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        <a th:href="@{/dashboard}"
+                            class="w-full sm:w-auto bg-white/5 hover:bg-white/10 text-white font-bold px-10 rounded-[3rem] border border-white/10 transition-all duration-300 text-[1rem] leading-[2.8rem] sm:text-[1.3rem] sm:leading-[3.8rem] hover:scale-105 active:scale-95 text-center backdrop-blur-sm">
+                            메인 대시보드
+                        </a>
+                        <a th:href="@{/login}"
+                            class="w-full sm:w-auto bg-white/[0.02] hover:bg-white/[0.08] text-gray-300 hover:text-white font-bold px-10 rounded-[3rem] border border-white/5 hover:border-white/20 transition-all duration-300 text-[1rem] leading-[2.8rem] sm:text-[1.3rem] sm:leading-[3.8rem] hover:scale-105 active:scale-95 text-center backdrop-blur-sm">
+                            로그인
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Dashboard Space 2 Mockup Visual -->
+                <div class="mt-16 md:mt-24 relative mx-auto max-w-5xl group">
+                    <div
+                        class="glass-panel p-1 md:p-2 rounded-xl border border-white/10 shadow-2xl glow-effect transition-all duration-500 group-hover:border-point-500/30">
+                        <div
+                            class="bg-navy-950 rounded-lg overflow-hidden relative min-h-[220px] sm:min-h-0 sm:aspect-video flex flex-col border border-white/5">
+
+                            <!-- Mockup OS Header -->
+                            <div
+                                class="h-8 md:h-12 border-b border-white/10 flex items-center px-3 md:px-5 gap-1.5 md:gap-2 bg-navy-900">
+                                <div class="w-2 md:w-3.5 h-2 md:h-3.5 rounded-full bg-red-500/80"></div>
+                                <div class="w-2 md:w-3.5 h-2 md:h-3.5 rounded-full bg-yellow-500/80"></div>
+                                <div class="w-2 md:w-3.5 h-2 md:h-3.5 rounded-full bg-green-500/80"></div>
+                                <div
+                                    class="ml-auto flex gap-3 md:gap-4 text-[9px] md:text-xs text-gray-500 font-medium whitespace-nowrap">
+                                    <span>트레이딩크루</span>
+                                </div>
+                            </div>
+
+                            <!-- Mockup Content Area -->
+                            <div class="flex-grow p-2.5 md:p-6 flex gap-2.5 md:gap-6 bg-navy-950 overflow-hidden">
+                                <!-- Left Column: Market Indicators -->
+                                <div
+                                    class="w-1/4 bg-white/[0.02] rounded-lg border border-white/5 p-2 md:p-5 flex flex-col gap-2 md:gap-4">
+                                    <div class="h-2.5 md:h-5 bg-white/10 rounded w-1/2 mb-1 md:mb-2"></div>
+                                    <div
+                                        class="h-8 md:h-16 bg-white/5 rounded-md w-full flex items-center px-1.5 md:px-4 justify-between border border-white/[0.02]">
+                                        <div class="h-2 md:h-3 bg-white/10 rounded w-1/3"></div>
+                                        <div class="h-2 md:h-4 bg-green-500/20 rounded w-1/4"></div>
+                                    </div>
+                                    <div
+                                        class="h-8 md:h-16 bg-white/5 rounded-md w-full flex items-center px-1.5 md:px-4 justify-between border border-white/[0.02]">
+                                        <div class="h-2 md:h-3 bg-white/10 rounded w-1/3"></div>
+                                        <div class="h-2 md:h-4 bg-red-500/20 rounded w-1/4"></div>
+                                    </div>
+                                    <div
+                                        class="hidden md:flex h-16 bg-white/5 rounded-lg w-full items-center px-4 justify-between border border-white/[0.02]">
+                                        <div class="h-3 bg-white/10 rounded w-1/3"></div>
+                                        <div class="h-4 bg-green-500/20 rounded w-1/4"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Center Column: Chart & Analysis -->
+                                <div
+                                    class="w-2/4 bg-white/[0.02] rounded-lg border border-white/5 p-2 md:p-5 flex flex-col">
+                                    <div class="flex justify-between items-center mb-3 md:mb-8">
+                                        <div class="h-2 md:h-5 bg-white/10 rounded w-1/3"></div>
+                                        <div class="h-1.5 md:h-4 bg-white/5 rounded w-1/6"></div>
+                                    </div>
+                                    <!-- Pseudo Bar Chart -->
+                                    <div class="flex-grow flex items-end gap-1 md:gap-2 px-1 md:px-4 pb-1 md:pb-2">
+                                        <div
+                                            class="w-full bg-white/5 h-[30%] rounded-t-sm hover:bg-point-600/50 transition-colors">
+                                        </div>
+                                        <div
+                                            class="w-full bg-white/5 h-[45%] rounded-t-sm hover:bg-point-600/50 transition-colors">
+                                        </div>
+                                        <div
+                                            class="w-full bg-white/5 h-[25%] rounded-t-sm hover:bg-point-600/50 transition-colors">
+                                        </div>
+                                        <div class="w-full bg-point-600/60 h-[60%] rounded-t-sm"></div>
+                                        <div class="w-full bg-point-600/80 h-[40%] rounded-t-sm"></div>
+                                        <div
+                                            class="w-full bg-point-500 h-[85%] rounded-t-sm shadow-[0_0_10px_rgba(59,130,246,0.6)] relative">
+                                            <div
+                                                class="absolute -top-1 md:-top-3 left-1/2 -translate-x-1/2 w-1 md:w-2 h-1 md:h-2 rounded-full bg-white">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right Column: News & Crew Sync -->
+                                <div
+                                    class="w-1/4 bg-white/[0.02] rounded-lg border border-white/5 p-2 md:p-5 flex flex-col gap-2 md:gap-3">
+                                    <div class="h-2.5 md:h-5 bg-white/10 rounded w-2/3 mb-1 md:mb-2"></div>
+                                    <div class="flex flex-col gap-1.5 md:gap-3 flex-grow">
+                                        <div class="h-6 md:h-12 bg-white/5 rounded-md w-full"></div>
+                                        <div
+                                            class="h-6 md:h-12 bg-white/5 rounded-md w-full border-l-2 border-point-500">
+                                        </div>
+                                        <div class="h-6 md:h-12 bg-white/5 rounded-md w-full"></div>
+                                        <div class="hidden lg:block h-12 bg-white/5 rounded-lg w-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Dynamic Content Section for SEO -->
+        <section class="py-12 bg-navy-950 px-4">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12">
+
+                <!-- Recent Notices -->
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span class="w-2 h-6 bg-blue-500 rounded-full"></span>
+                            최신 공지사항
+                        </h2>
+                        <a th:href="@{/notice}"
+                            class="text-xs text-gray-500 hover:text-blue-400 transition-colors">전체보기</a>
+                    </div>
+                    <div class="space-y-3">
+                        <a th:each="notice : ${recentNotices}" th:href="@{|/notice/detail/${notice.id}|}"
+                            class="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-blue-500/30 transition-all group h-[82px]">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-bold text-gray-300 group-hover:text-white transition-colors"
+                                    th:text="${notice.title}">공지사항 제목</span>
+                                <span class="text-[10px] text-gray-600 font-mono"
+                                    th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd')}">2024.03.20</span>
+                            </div>
+                        </a>
+                        <div th:if="${#lists.isEmpty(recentNotices)}" class="py-10 text-center text-gray-600 text-sm">
+                            등록된 공지사항이 없습니다.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popular Reports (Card News) -->
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span class="w-2 h-6 bg-purple-500 rounded-full"></span>
+                            AI 투자 정보 베스트
+                        </h2>
+                        <a th:href="@{/infocenter}"
+                            class="text-xs text-gray-500 hover:text-purple-400 transition-colors">더 보기</a>
+                    </div>
+                    <div class="grid grid-cols-1 gap-3">
+                        <a th:each="news : ${topRecommendedNews}" th:href="@{|/infocenter/${news.id}|}"
+                            class="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-purple-500/30 transition-all group h-[82px]">
+                            <div class="flex flex-col gap-1">
+                                <span class="text-sm font-bold text-gray-200 group-hover:text-white transition-colors"
+                                    th:text="${news.topic}">리포트 주제</span>
+                                <span class="text-[10px] text-gray-600"
+                                    th:text="${#temporals.format(news.createdDate, 'yyyy.MM.dd') + ' | AI 분석'}">날짜</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 text-xs text-red-400/80 bg-red-400/5 px-2 py-1 rounded-lg">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                                </svg>
+                                <span th:text="${news.likedMembers.size()}">0</span>
+                            </div>
+                        </a>
+                        <div th:if="${#lists.isEmpty(topRecommendedNews)}"
+                            class="py-10 text-center text-gray-600 text-sm">
+                            분석된 리포트가 없습니다.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 3. Features Section (Core Differentiators) -->
+        <section class="py-20 md:py-28 bg-navy-900 border-y border-white/5 relative px-4 text-center sm:text-left">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16 md:mb-20">
+                    <h2 class="text-xs md:text-sm font-bold text-point-500 tracking-widest uppercase mb-4">핵심 차별점</h2>
+                    <p class="text-2xl sm:text-3xl md:text-5xl font-bold text-white tracking-tight leading-tight">전문가
+                        협업을 위한 <br class="sm:hidden">새로운 기준.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    <!-- Feature 1 -->
+                    <div
+                        class="glass-panel p-8 md:p-10 rounded-2xl hover:bg-white/[0.03] transition-all duration-300 border border-white/5 hover:border-point-500/30 group">
+                        <div
+                            class="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-point-600/10 flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 transition-transform duration-300 text-point-500 border border-point-500/20 mx-auto sm:mx-0">
+                            <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                                </path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl md:text-2xl font-bold text-white mb-4">소음 없는 커뮤니케이션</h3>
+                        <p class="text-sm md:text-base text-gray-400 leading-relaxed">
+                            크루당 최대 7명, 사용자당 최대 3개의 크루로 제한됩니다.
+                            공개 채팅방의 불필요한 대화 없이 고밀도의 정보 공유를 경험하십시오.
+                        </p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div
+                        class="glass-panel p-8 md:p-10 rounded-2xl hover:bg-white/[0.03] transition-all duration-300 border border-white/5 hover:border-point-500/30 group">
+                        <div
+                            class="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-point-600/10 flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 transition-transform duration-300 text-point-500 border border-point-500/20 mx-auto sm:mx-0">
+                            <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl md:text-2xl font-bold text-white mb-4">실시간 리서치 툴</h3>
+                        <p class="text-sm md:text-base text-gray-400 leading-relaxed">
+                            API 기반의 통합 모니터링. 글로벌 FX, 주요 지수 및 속보를 실시간으로 체계적으로 정리하여 제공합니다.
+                        </p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div
+                        class="glass-panel p-8 md:p-10 rounded-2xl hover:bg-white/[0.03] transition-all duration-300 border border-white/5 hover:border-point-500/30 group">
+                        <div
+                            class="w-12 h-12 md:w-14 md:h-14 rounded-xl bg-point-600/10 flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 transition-transform duration-300 text-point-500 border border-point-500/20 mx-auto sm:mx-0">
+                            <svg class="w-6 h-6 md:w-7 md:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl md:text-2xl font-bold text-white mb-4">시스템 기반 검증</h3>
+                        <p class="text-sm md:text-base text-gray-400 leading-relaxed">
+                            단순한 주장이 아닙니다. 우리의 협업 엔진은 증명된 포트폴리오와 엄격한 매매 일지를 중심으로 구축되어 노이즈를 걸러냅니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 4. Trust & Footer -->
+    <footer class="bg-navy-950 pt-16 md:pt-20 pb-10 border-t border-white/5 px-4 overflow-hidden">
+        <div class="max-w-7xl mx-auto">
+
+            <!-- Trust Notices (Crucial for Credibility) -->
+            <div class="bg-red-500/5 border border-red-500/20 rounded-2xl p-6 md:p-8 mb-12 md:mb-16 backdrop-blur-sm">
+                <div class="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+                    <div class="bg-red-500/10 p-2.5 md:p-3 rounded-lg flex-shrink-0">
+                        <svg class="w-6 h-6 md:w-8 md:h-8 text-red-500" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="text-red-400 font-bold text-base md:text-lg mb-2 md:mb-3 tracking-wide uppercase">운영
+                            원칙 및 책임 한계 고지</h4>
+                        <p class="text-gray-300 leading-relaxed mb-4 text-sm md:text-base">
+                            <strong class="text-white">TradingCrews:트루는 리딩방, 자동 매매 봇 또는 원금 보장 플랫폼이 아닙니다.</strong> 본 플랫폼은
+                            개인의
+                            리서치와 소그룹 협업을 돕기 위해 설계된 순수 데이터 도구입니다. 원금 보장 수익이나 불법 투자 자문을 판매하려는 시도는 엄격히 모니터링되며 즉시 차단됩니다.
+                        </p>
+                        <p class="text-gray-500 text-xs md:text-sm leading-relaxed border-t border-red-500/10 pt-4">
+                            고지사항: 본 대시보드의 정보(외부 API 통합을 통한)는 지연되거나 외부 제공업체의 장애에 영향을 받을 수 있습니다. 모든 투자 이익 또는 손실에 대한 최종 책임은
+                            전적으로 사용자에게 있습니다. 중요한 금융 결정을 내릴 때 본 플랫폼에만 의존하지 마십시오.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Links & Copyright -->
+            <div
+                class="flex flex-col lg:flex-row justify-between items-center gap-8 pt-10 border-t border-white/10 text-center lg:text-left">
+                <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+                    <span class="text-2xl font-extrabold tracking-tighter text-white">
+                        TradingCrews<span class="text-gray-600">:트루</span>
+                    </span>
+                    <span class="text-gray-600 text-xs md:text-sm font-medium">&copy; 2026 TradingCrews:트루. All rights
+                        reserved.</span>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-x-6 sm:gap-x-8 gap-y-4">
+                    <a th:href="@{/terms}"
+                        class="text-xs md:text-sm font-medium text-gray-500 hover:text-white transition-colors">이용약관</a>
+                    <a th:href="@{/privacy}"
+                        class="text-xs md:text-sm font-medium text-gray-500 hover:text-white transition-colors">개인정보처리방침</a>
+                    <button id="contact-modal-btn"
+                        class="text-xs md:text-sm font-medium text-gray-500 hover:text-white transition-colors cursor-pointer">운영자
+                        문의</button>
+                    <a href="https://github.com/Moon-jk" target="_blank" rel="noopener noreferrer"
+                        class="text-xs md:text-sm font-medium text-gray-500 hover:text-white flex items-center gap-1.5 transition-colors group">
+                        <svg class="w-4 h-4 md:w-5 md:h-5 text-gray-500 group-hover:text-white transition-colors"
+                            fill="currentColor" viewBox="0 0 24 24">
+                            <path fill-rule="evenodd"
+                                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                                clip-rule="evenodd"></path>
+                        </svg>
+                        프로젝트 GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Operator Contact Modal -->
+    <div id="contact-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div id="modal-backdrop" class="absolute inset-0 bg-navy-950/80 backdrop-blur-md"></div>
+
+        <!-- Modal Content -->
+        <div id="modal-content"
+            class="relative w-full max-w-md transform opacity-0 scale-95 transition-all duration-300">
+            <div
+                class="glass-panel p-8 rounded-3xl border border-white/10 shadow-2xl bg-navy-900 overflow-hidden relative">
+                <!-- Close Button -->
+                <button id="close-modal"
+                    class="absolute top-5 right-5 text-gray-500 hover:text-white transition-colors p-2">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+
+                <div class="text-center">
+                    <div
+                        class="w-16 h-16 bg-point-600/20 rounded-2xl flex items-center justify-center mx-auto mb-6 text-point-500 border border-point-500/20">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white mb-2">운영자에게 문의하기</h3>
+                    <p class="text-gray-400 mb-8 leading-relaxed">준비된 인스타그램 DM을 통해 <br>가장 빠르게 답변을 받으실 수 있습니다.</p>
+
+                    <a href="https://www.instagram.com/dog_baljak/" target="_blank" rel="noopener noreferrer"
+                        class="flex items-center justify-center gap-3 w-full bg-gradient-to-r from-purple-600 to-pink-500 hover:from-purple-500 hover:to-pink-400 text-white font-bold py-4 px-6 rounded-2xl transition-all duration-300 shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 transform hover:-translate-y-1">
+                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.332 3.608 1.308.975.975 1.245 2.242 1.308 3.607.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.063 1.366-.333 2.633-1.308 3.608-.975.975-2.242 1.245-3.607 1.308-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.063-2.633-.333-3.608-1.308-.975-.975-1.245-2.242-1.308-3.607-.058-1.266-.07-1.646-.07-4.85s.012-3.584.07-4.85c.062-1.366.332-2.633 1.308-3.608.975-.975 2.242-1.245 3.607-1.308 1.266-.058 1.646-.07 4.85-.07zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.355 2.618 6.778 6.98 6.978 1.28.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.668-.072-4.948-.2-4.354-2.617-6.78-6.979-6.979-1.28-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                        </svg>
+                        인스타그램으로 문의하기
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Menu & Contact Modal Script -->
+    <script>
+        // Mobile Menu
+        const menuBtn = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileMenuInner = document.getElementById('mobile-menu-inner');
+        const menuIcon = document.getElementById('menu-icon');
+        const closeIcon = document.getElementById('close-icon');
+        const body = document.body;
+
+        const toggleMenu = (show) => {
+            if (show) {
+                mobileMenu.classList.remove('opacity-0', 'invisible');
+                mobileMenu.classList.add('opacity-100', 'visible');
+                mobileMenuInner.classList.remove('-translate-y-4');
+                mobileMenuInner.classList.add('translate-y-0');
+
+                menuIcon.classList.add('hidden');
+                closeIcon.classList.remove('hidden');
+                body.style.overflow = 'hidden';
+            } else {
+                mobileMenu.classList.remove('opacity-100', 'visible');
+                mobileMenu.classList.add('opacity-0', 'invisible');
+                mobileMenuInner.classList.remove('translate-y-0');
+                mobileMenuInner.classList.add('-translate-y-4');
+
+                menuIcon.classList.remove('hidden');
+                closeIcon.classList.add('hidden');
+                body.style.overflow = '';
+            }
+        };
+
+        menuBtn.addEventListener('click', () => {
+            const isVisible = mobileMenu.classList.contains('visible');
+            toggleMenu(!isVisible);
+        });
+
+        const menuLinks = mobileMenu.querySelectorAll('a');
+        menuLinks.forEach(link => {
+            link.addEventListener('click', () => toggleMenu(false));
+        });
+
+        // Contact Modal
+        const contactModalBtn = document.getElementById('contact-modal-btn');
+        const contactModal = document.getElementById('contact-modal');
+        const modalContent = document.getElementById('modal-content');
+        const closeModalBtn = document.getElementById('close-modal');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+
+        const openModal = () => {
+            contactModal.classList.remove('hidden');
+            contactModal.classList.add('flex');
+            body.style.overflow = 'hidden';
+
+            // Animation trigger
+            setTimeout(() => {
+                modalContent.classList.remove('opacity-0', 'scale-95');
+                modalContent.classList.add('opacity-100', 'scale-100');
+            }, 10);
+        };
+
+        const closeModal = () => {
+            modalContent.classList.remove('opacity-100', 'scale-100');
+            modalContent.classList.add('opacity-0', 'scale-95');
+
+            setTimeout(() => {
+                contactModal.classList.add('hidden');
+                contactModal.classList.remove('flex');
+                if (mobileMenu.classList.contains('hidden')) {
+                    body.style.overflow = '';
+                }
+            }, 300);
+        };
+
+        contactModalBtn.addEventListener('click', openModal);
+        closeModalBtn.addEventListener('click', closeModal);
+        modalBackdrop.addEventListener('click', closeModal);
+    </script>
+
+</body>
+
+</html>

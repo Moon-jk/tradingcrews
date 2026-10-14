@@ -1,0 +1,746 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+    <head>
+        <title>매크로 지표 분석 | TradingCrews:트루</title>
+        <!-- Chart.js & Plugins -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@0.2.0/dist/chartjs-chart-financial.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+        <style>
+            .chart-view-viewport {
+                width: 100%;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                touch-action: pan-x;
+                /* 중요: 브라우저에 가로 스크롤 허용 알림 */
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                position: relative;
+                display: block;
+            }
+
+            .chart-view-viewport::-webkit-scrollbar {
+                display: none;
+            }
+
+            .chart-inner-wrapper {
+                position: relative;
+                display: block;
+                height: 300px;
+                min-width: 100%;
+            }
+
+            @media (min-width: 768px) {
+                .chart-inner-wrapper {
+                    height: 400px;
+                }
+            }
+
+            .hide-scrollbar::-webkit-scrollbar {
+                display: none;
+            }
+
+            .hide-scrollbar {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+        </style>
+    </head>
+
+    <span layout:fragment="page-title">Macro Analysis</span>
+
+    <div layout:fragment="content" class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
+
+        <!-- Header Section -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-8 md:mb-16 border-b pb-6 md:pb-10"
+            style="border-color: var(--border-base)">
+            <div>
+                <div class="flex items-center gap-3 mb-3">
+                    <a th:href="@{/infocenter}"
+                        class="text-[10px] font-black uppercase tracking-widest text-[#02A6C8] hover:text-[#0089A5] transition-colors border border-[#02A6C8]/20 px-3 py-1 rounded-full flex items-center gap-1.5 w-fit">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-width="3" stroke-linecap="round" />
+                        </svg> Back to Intel
+                    </a>
+                </div>
+                <h1 class="font-display font-black text-3xl md:text-4xl mb-3 tracking-tight"
+                    style="color: var(--text-primary)">
+                    Macro Indicators</h1>
+                <p class="font-bold max-w-lg leading-relaxed text-sm md:text-base" style="color: var(--text-secondary)">
+                    실시간 원/달러 환율,
+                    DXY(달러인덱스), VIX(변동성 지수)의<br class="hidden md:block"> 추세를 다각도로 확인하세요.</p>
+            </div>
+            <div class="hidden md:flex gap-1 p-1 rounded-xl w-auto"
+                style="background: var(--bg-surface-2); border: 1px solid var(--border-base);">
+                <button
+                    class="period-tab px-5 py-2 rounded-lg text-xs font-bold transition-all bg-blue-600 text-white shadow-md border-blue-600 border whitespace-nowrap"
+                    data-period="daily" onclick="updateCharts('daily')">일봉(Day)</button>
+                <button
+                    class="period-tab px-5 py-2 rounded-lg text-xs font-bold transition-all border hover:border-slate-500 opacity-60 hover:opacity-100 whitespace-nowrap"
+                    style="background: var(--bg-card); border-color: var(--border-base); color: var(--text-primary);"
+                    data-period="weekly" onclick="updateCharts('weekly')">주봉(Week)</button>
+                <button
+                    class="period-tab px-5 py-2 rounded-lg text-xs font-bold transition-all border hover:border-slate-500 opacity-60 hover:opacity-100 whitespace-nowrap"
+                    style="background: var(--bg-card); border-color: var(--border-base); color: var(--text-primary);"
+                    data-period="monthly" onclick="updateCharts('monthly')">월봉(Month)</button>
+            </div>
+        </div>
+
+        <!-- Chart Type Tabs -->
+        <div class="flex flex-nowrap overflow-x-auto hide-scrollbar gap-4 md:gap-6 mb-8 border-b"
+            style="border-color: var(--border-base)">
+            <button
+                class="chart-type-tab pb-4 px-2 font-black text-sm md:text-xl transition-all border-b-2 whitespace-nowrap shrink-0"
+                data-chart="exchange" onclick="switchChartType('exchange')"
+                style="color: var(--text-primary); border-color: #02A6C8;">USD / KRW</button>
+            <button
+                class="chart-type-tab pb-4 px-2 font-black text-sm md:text-xl transition-all border-b-2 border-transparent hover:text-white whitespace-nowrap shrink-0"
+                style="color: var(--text-muted);" data-chart="vix" onclick="switchChartType('vix')">VIX Index</button>
+            <button
+                class="chart-type-tab pb-4 px-2 font-black text-sm md:text-xl transition-all border-b-2 border-transparent hover:text-white whitespace-nowrap shrink-0"
+                style="color: var(--text-muted);" data-chart="dxy" onclick="switchChartType('dxy')">DXY Index</button>
+            <button
+                class="chart-type-tab pb-4 px-2 font-black text-sm md:text-xl transition-all border-b-2 border-transparent hover:text-white whitespace-nowrap shrink-0"
+                style="color: var(--text-muted);" data-chart="tnx" onclick="switchChartType('tnx')">US 10Y Yield
+                Proxy</button>
+            <button
+                class="chart-type-tab pb-4 px-2 font-black text-sm md:text-xl transition-all border-b-2 border-transparent hover:text-white whitespace-nowrap shrink-0"
+                style="color: var(--text-muted);" data-chart="wti" onclick="switchChartType('wti')">WTI Crude</button>
+        </div>
+
+        <!-- Zoom Controls -->
+        <div class="flex items-center justify-end gap-2 mb-6 hidden md:flex">
+            <span class="text-[10px] font-bold uppercase tracking-widest opacity-40 mr-2">Zoom Control</span>
+            <button onclick="zoomChart('in')"
+                class="w-10 h-10 rounded-xl flex items-center justify-center border hover:border-[#02A6C8] transition-all bg-white/5"
+                style="border-color: var(--border-base)">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 4v16m8-8H4" stroke-width="2.5" stroke-linecap="round" />
+                </svg>
+            </button>
+            <button onclick="zoomChart('out')"
+                class="w-10 h-10 rounded-xl flex items-center justify-center border hover:border-[#02A6C8] transition-all bg-white/5"
+                style="border-color: var(--border-base)">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M20 12H4" stroke-width="2.5" stroke-linecap="round" />
+                </svg>
+            </button>
+            <button onclick="resetZoom()"
+                class="px-4 h-10 rounded-xl border hover:border-[#02A6C8] transition-all bg-white/5 text-[10px] font-black uppercase tracking-widest text-white/60"
+                style="border-color: var(--border-base)">Reset</button>
+        </div>
+
+        <!-- Charts Container -->
+        <div id="chart-cards-container" class="mb-12">
+
+            <!-- USD/KRW Chart Card -->
+            <div id="card-exchange"
+                class="rounded-[2rem] p-6 md:p-8 flex flex-col gap-6 border transition-all shadow-lg animate-fade-in"
+                style="background: var(--bg-card); border-color: var(--border-base)">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <h3 class="font-display font-black text-xl md:text-2xl" style="color: var(--text-primary)">USD /
+                            KRW</h3>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-widest mt-1 opacity-60"
+                            style="color: var(--text-muted)">Exchange Rate History</p>
+                    </div>
+                    <div class="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center border blue-glow"
+                        style="background: var(--bg-surface-2); border-color: #02A6C8; color: #02A6C8;">
+                        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="chart-view-viewport">
+                    <div class="chart-inner-wrapper" id="wrapper-exchangeChart">
+                        <canvas id="exchangeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIX Chart Card -->
+            <div id="card-vix"
+                class="hidden rounded-[2rem] p-6 md:p-8 flex flex-col gap-6 border transition-all shadow-lg animate-fade-in"
+                style="background: var(--bg-card); border-color: var(--border-base)">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <h3 class="font-display font-black text-xl md:text-2xl" style="color: var(--text-primary)">VIX
+                            Index</h3>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-widest mt-1 mb-2 md:mb-3 opacity-60"
+                            style="color: var(--text-muted)">Volatility Index Proxy</p>
+                        <p class="text-[11px] md:text-xs font-medium leading-relaxed"
+                            style="color: var(--text-secondary)">
+                            VIX(변동성 지수)는 향후 주식 시장이 얼마나 요동칠지에 대한 투자자들의 불안감을 수치화한 '공포 지수'입니다.<br class="hidden sm:block">
+                            <span class="text-red-400 font-bold mt-1 inline-block">보통 20 미만은 '안정', 30 이상은 '극도의 공포(패닉)'
+                                상태를 의미합니다.</span>
+                        </p>
+                    </div>
+                    <div
+                        class="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-red-500/10 flex items-center justify-center border border-red-500/20 text-red-500">
+                        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="chart-view-viewport">
+                    <div class="chart-inner-wrapper" id="wrapper-vixChart">
+                        <canvas id="vixChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DXY Chart Card -->
+            <div id="card-dxy"
+                class="hidden rounded-[2rem] p-6 md:p-8 flex flex-col gap-6 border transition-all shadow-lg animate-fade-in"
+                style="background: var(--bg-card); border-color: var(--border-base)">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <h3 class="font-display font-black text-xl md:text-2xl" style="color: var(--text-primary)">U.S.
+                            Dollar Index (DXY)</h3>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-widest mt-1 mb-2 md:mb-3 opacity-60"
+                            style="color: var(--text-muted)">Dollar Strength Tracker</p>
+                        <p class="text-[11px] md:text-xs font-medium leading-relaxed"
+                            style="color: var(--text-secondary)">
+                            주요국 통화 대비 미국 달러의 가치 기준을 나타냅니다.<br class="hidden sm:block">
+                            <span class="text-emerald-500 font-bold mt-1 inline-block">🔺 상승: 외국인 자금 이탈 및 증시 부담 / 🔻 하락:
+                                위험자산(주식) 선호도 증가</span>
+                        </p>
+                    </div>
+                    <div
+                        class="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-500">
+                        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="chart-view-viewport">
+                    <div class="chart-inner-wrapper" id="wrapper-dxyChart">
+                        <canvas id="dxyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TNX Chart Card -->
+            <div id="card-tnx"
+                class="hidden rounded-[2rem] p-6 md:p-8 flex flex-col gap-6 border transition-all shadow-lg animate-fade-in"
+                style="background: var(--bg-card); border-color: var(--border-base)">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <h3 class="font-display font-black text-xl md:text-2xl" style="color: var(--text-primary)">US
+                            10-Year Yield Proxy (IEF)</h3>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-widest mt-1 mb-2 md:mb-3 opacity-60"
+                            style="color: var(--text-muted)">Interest Rate Benchmark Tracker</p>
+                        <p class="text-[11px] md:text-xs font-medium leading-relaxed"
+                            style="color: var(--text-secondary)">
+                            글로벌 장기 금리의 벤치마크 역할을 하는 10년물 미 국채 수익률 지표(ETF 대리측정)입니다. (채권 가격이므로 <strong
+                                class="text-white">그래프 하락 = 금리 상승</strong>)<br class="hidden sm:block">
+                            <span class="text-orange-500 font-bold mt-1 inline-block">금리 상승: 기술주/성장주 압박 / 금리
+                                하락: 위험자산 매수 심리 개선</span>
+                        </p>
+                    </div>
+                    <div
+                        class="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20 text-orange-500">
+                        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="chart-view-viewport">
+                    <div class="chart-inner-wrapper" id="wrapper-tnxChart">
+                        <canvas id="tnxChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WTI Chart Card -->
+            <div id="card-wti"
+                class="hidden rounded-[2rem] p-6 md:p-8 flex flex-col gap-6 border transition-all shadow-lg animate-fade-in"
+                style="background: var(--bg-card); border-color: var(--border-base)">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1">
+                        <h3 class="font-display font-black text-xl md:text-2xl" style="color: var(--text-primary)">WTI
+                            Crude Oil Proxy (USO)</h3>
+                        <p class="text-[10px] md:text-xs font-bold uppercase tracking-widest mt-1 mb-2 md:mb-3 opacity-60"
+                            style="color: var(--text-muted)">Energy & Inflation Tracker</p>
+                        <p class="text-[11px] md:text-xs font-medium leading-relaxed"
+                            style="color: var(--text-secondary)">
+                            미국 서부 텍사스산 원유(WTI) 가격을 대리 추종하는 에너지/인플레이션 선행 지표입니다.<br class="hidden sm:block">
+                            <span class="text-yellow-500 font-bold mt-1 inline-block">유가 급등: 인플레 우려 및 원가 부담 / 유가
+                                하락: 소비 우려 완화</span>
+                        </p>
+                    </div>
+                    <div
+                        class="shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-yellow-500/10 flex items-center justify-center border border-yellow-500/20 text-yellow-500">
+                        <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="chart-view-viewport">
+                    <div class="chart-inner-wrapper" id="wrapper-wtiChart">
+                        <canvas id="wtiChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Period Tabs (Mobile Only) -->
+        <div class="flex md:hidden justify-center mb-12 px-4">
+            <div class="flex gap-1 p-1 rounded-xl w-full max-w-[320px] mx-auto shadow-2xl"
+                style="background: var(--bg-surface-2); border: 1px solid var(--border-base);">
+                <button
+                    class="period-tab flex-1 px-2 py-3 rounded-lg text-[11px] font-bold transition-all bg-blue-600 text-white shadow-md border-blue-600 border whitespace-nowrap"
+                    data-period="daily" onclick="updateCharts('daily')">일봉(Day)</button>
+                <button
+                    class="period-tab flex-1 px-2 py-3 rounded-lg text-[11px] font-bold transition-all border hover:border-slate-500 opacity-60 hover:opacity-100 whitespace-nowrap"
+                    style="background: var(--bg-card); border-color: var(--border-base); color: var(--text-primary);"
+                    data-period="weekly" onclick="updateCharts('weekly')">주봉(Week)</button>
+                <button
+                    class="period-tab flex-1 px-2 py-3 rounded-lg text-[11px] font-bold transition-all border hover:border-slate-500 opacity-60 hover:opacity-100 whitespace-nowrap"
+                    style="background: var(--bg-card); border-color: var(--border-base); color: var(--text-primary);"
+                    data-period="monthly" onclick="updateCharts('monthly')">월봉(Month)</button>
+            </div>
+        </div>
+
+    </div>
+
+    <th:block layout:fragment="script">
+        <script>
+            let rawData = {
+                exchange: [],
+                dxy: [],
+                vix: [],
+                tnx: [],
+                wti: []
+            };
+
+            let charts = {
+                exchangeChart: null,
+                dxyChart: null,
+                vixChart: null,
+                tnxChart: null,
+                wtiChart: null
+            };
+
+            let currentPeriod = 'daily';
+
+            document.addEventListener('DOMContentLoaded', () => {
+                fetchAndDrawCharts();
+            });
+
+            // 차트 공통 설정 옵션
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 400 },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(14, 22, 32, 0.9)',
+                        titleColor: 'rgba(255, 255, 255, 0.6)',
+                        bodyColor: '#fff',
+                        borderColor: 'rgba(2, 166, 200, 0.2)',
+                        borderWidth: 1,
+                        padding: 12,
+                        displayColors: false,
+                        titleFont: { size: 10, family: 'Inter', weight: 800 },
+                        bodyFont: { size: 14, family: 'Outfit', weight: 900 }
+                    },
+                    zoom: {
+                        zoom: {
+                            wheel: { enabled: true, speed: 0.01 },
+                            pinch: { enabled: true },
+                            mode: 'x',
+                        },
+                        pan: {
+                            enabled: false // 모바일 네이티브 스크롤을 위해 비활성화
+                        },
+                        limits: {
+                            x: { min: 'original', max: 'original' }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.4)',
+                            font: { size: 10, family: 'Inter', weight: 700 },
+                            maxRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: 7
+                        },
+                        offset: true
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { display: false },
+                        border: { display: false },
+                        suggestedMax: function (context) {
+                            const max = context.chart.data.datasets[0].data.reduce((a, b) => Math.max(a, b), -Infinity);
+                            return max * 1.01; // 상단 3% 여유 공간 추가
+                        }
+                    }
+                },
+                interaction: { mode: 'nearest', axis: 'x', intersect: false },
+                layout: {
+                    padding: {
+                        top: 25,
+                        left: 5,   // 기존 10~20에서 축소
+                        right: window.innerWidth < 768 ? 10 : 15, // 기존 40~60에서 대폭 축소
+                        bottom: 10
+                    }
+                }
+            };
+
+            async function fetchAndDrawCharts() {
+                try {
+                    // 병렬 페치
+                    const [exRes, dxyRes, vixRes, tnxRes, wtiRes] = await Promise.all([
+                        fetch('/api/v1/market/exchange-rate'),
+                        fetch('/api/v1/market/dxy'),
+                        fetch('/api/v1/market/vix'),
+                        fetch('/api/v1/market/tnx'),
+                        fetch('/api/v1/market/wti')
+                    ]);
+
+                    rawData.exchange = await exRes.json();
+                    rawData.dxy = await dxyRes.json();
+                    rawData.vix = await vixRes.json();
+                    rawData.tnx = await tnxRes.json();
+                    rawData.wti = await wtiRes.json();
+
+                    updateCharts('daily');
+                } catch (err) {
+                    console.error("Failed to fetch market data", err);
+                }
+            }
+
+            function aggregateData(dataList, period) {
+                if (period === 'daily') return dataList;
+
+                const grouped = {};
+                dataList.forEach(item => {
+                    const date = new Date(item.targetDate);
+                    let key = '';
+
+                    if (period === 'weekly') {
+                        // Create a week identifier based on ISO week
+                        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+                        const dayNum = d.getUTCDay() || 7;
+                        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+                        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+                        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+                        key = `${d.getUTCFullYear()}-W${weekNo}`;
+                    } else if (period === 'monthly') {
+                        // Month identifier
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        key = `${year}-${month}`;
+                    }
+
+                    // Since dataList is sorted by date ascending, the latest date overwrites earlier ones for the same key.
+                    // This naturally serves as the "Close" value for the week/month.
+                    grouped[key] = item;
+                });
+
+                return Object.values(grouped);
+            }
+
+            window.updateCharts = function (period) {
+                currentPeriod = period;
+                // UI 탭 스타일 변경
+                document.querySelectorAll('.period-tab').forEach(tab => {
+                    if (tab.dataset.period === period) {
+                        tab.classList.add('bg-blue-600', 'text-white', 'shadow-md', 'border-blue-600');
+                        tab.classList.remove('hover:border-slate-500', 'opacity-60', 'hover:opacity-100');
+                        tab.style.background = '';
+                        tab.style.borderColor = '';
+                        tab.style.color = '';
+                    } else {
+                        tab.classList.remove('bg-blue-600', 'text-white', 'shadow-md', 'border-blue-600');
+                        tab.classList.add('hover:border-slate-500', 'opacity-60', 'hover:opacity-100');
+                        tab.style.background = 'var(--bg-card)';
+                        tab.style.borderColor = 'var(--border-base)';
+                        tab.style.color = 'var(--text-primary)';
+                    }
+                });
+
+                // 데이터 그룹핑
+                const exData = aggregateData(rawData.exchange, period);
+                const dxyData = aggregateData(rawData.dxy, period);
+                const vixData = aggregateData(rawData.vix, period);
+                const tnxData = aggregateData(rawData.tnx, period);
+                const wtiData = aggregateData(rawData.wti, period);
+
+                // 차트 새로 그리기
+                drawChart('exchangeChart', exData, 'USD/KRW', '#02A6C8'); // Electric Blue
+                drawChart('dxyChart', dxyData, 'DXY Tracker', '#10b981'); // Emerald
+
+                // VIX 지수는 20, 30 가로선 추가
+                drawChart('vixChart', vixData, 'VIX Proxy', '#ef4444', {
+                    plugins: {
+                        beforeDraw: (chart) => {
+                            const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+                            const drawLine = (val, color, label) => {
+                                const yPos = y.getPixelForValue(val);
+                                if (yPos < chart.chartArea.top || yPos > chart.chartArea.bottom) return;
+                                ctx.save();
+                                ctx.strokeStyle = color;
+                                ctx.setLineDash([5, 5]);
+                                ctx.lineWidth = 1;
+                                ctx.beginPath();
+                                ctx.moveTo(left, yPos);
+                                ctx.lineTo(right, yPos);
+                                ctx.stroke();
+
+                                ctx.fillStyle = color;
+                                ctx.font = 'bold 10px Inter';
+                                ctx.fillText(label, left + 5, yPos - 5);
+                                ctx.restore();
+                            };
+                            drawLine(20, 'rgba(255, 255, 255, 0.2)', '20 (STABLE)');
+                            drawLine(30, 'rgba(239, 68, 68, 0.4)', '30 (PANIC)');
+                        }
+                    }
+                });
+
+                drawChart('tnxChart', tnxData, 'US 10Y Proxy', '#f97316');   // Orange
+                drawChart('wtiChart', wtiData, 'WTI Crude Proxy', '#eab308');   // Yellow
+            };
+
+            function drawChart(canvasId, dataList, labelName, lineColor, customPlugins = {}) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+
+                // 기존 차트가 있다면 파괴 (오류 방지)
+                if (charts[canvasId]) {
+                    charts[canvasId].destroy();
+                }
+
+                // Date parsing formatter
+                const labels = dataList.map(item => {
+                    const dt = new Date(item.targetDate);
+                    // 연도 생략하고 월/일만 표기
+                    return `${dt.getMonth() + 1}/${dt.getDate()}`;
+                });
+                const prices = dataList.map(item => item.closePrice);
+
+                // 기본 그라데이션 만들기 (위에서 아래로 자연스럽게 페이드)
+                const ctx = canvas.getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+
+                // 색상코드(HEX)에서 rgba(투명도 포함) 문자열로 변환하는 간단한 헬퍼
+                const toRgba = (hex, alpha) => {
+                    let r = parseInt(hex.slice(1, 3), 16),
+                        g = parseInt(hex.slice(3, 5), 16),
+                        b = parseInt(hex.slice(5, 7), 16);
+                    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+                };
+
+                gradient.addColorStop(0, toRgba(lineColor, 0.3));
+                gradient.addColorStop(1, toRgba(lineColor, 0.0));
+
+                // 데이터 포인트 간격을 대폭 늘려 가로로 훨씬 길게 만듦 (Professional Trading Look)
+                const wrapper = document.getElementById('wrapper-' + canvasId);
+                const viewportWidth = wrapper.parentElement.clientWidth;
+
+                // 포인트당 간격을 80px로 공격적으로 확대 (기존 35px)
+                const minWidthPerPoint = 80;
+                const totalContentWidth = dataList.length * minWidthPerPoint;
+
+                // 최소 화면 너비는 보장하되, 데이터가 많으면 아주 길게 스크롤되도록 설정
+                const finalWidth = Math.max(viewportWidth * 1.5, totalContentWidth);
+
+                wrapper.style.width = finalWidth + 'px';
+
+                const config = {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: labelName,
+                            data: prices,
+                            borderColor: lineColor,
+                            backgroundColor: gradient,
+                            borderWidth: 3,
+                            pointBackgroundColor: lineColor,
+                            pointBorderColor: '#0E1620',
+                            pointBorderWidth: 2,
+                            pointRadius: dataList.length > 80 ? 0 : 4, // 임계값 조정 및 점 크기 확대
+                            pointHoverRadius: 8,
+                            fill: true,
+                            tension: 0.1 // 약간의 부드러운 곡선 추가
+                        }]
+                    },
+                    options: {
+                        ...commonOptions,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        }
+                    },
+                    plugins: []
+                };
+
+                // VIX 전용 가로선 플러그인 등 커스텀 플러그인 주입
+                if (customPlugins.plugins) {
+                    if (customPlugins.plugins.beforeDraw) {
+                        config.plugins.push({
+                            id: 'customLines',
+                            beforeDraw: customPlugins.plugins.beforeDraw
+                        });
+                    }
+                }
+
+                charts[canvasId] = new Chart(ctx, config);
+
+                // 초기 렌더링 시 **가장 최신 데이터(오른쪽 끝)**가 보이도록 자동 스크롤
+                const viewportScroll = wrapper.parentElement;
+                setTimeout(() => {
+                    viewportScroll.scrollLeft = viewportScroll.scrollWidth - viewportScroll.clientWidth;
+                }, 200);
+
+                // 마우스 드래그로 스크롤 기능 추가 (이미 리스너가 없을 때만 등록하거나 매번 등록해도 되지만 뷰포트 대상이므로 주의)
+                // 중복 등록 방지를 위해 기존 리스너 제거는 어려우므로, 요소를 새로 복제하지 않는 한 유지됨
+                setupDragScroll(viewportScroll);
+            }
+
+            // 웹 데스크톱용 드래그 스크롤 & 모바일 터치 스크롤 강화
+            function setupDragScroll(viewport) {
+                if (viewport.dataset.dragInit) return;
+                viewport.dataset.dragInit = "true";
+
+                // 데스크톱 마우스 드래그
+                if (window.innerWidth >= 768) {
+                    viewport.style.cursor = "grab";
+                    let isDown = false;
+                    let startX;
+                    let scrollLeft;
+
+                    viewport.addEventListener('mousedown', (e) => {
+                        isDown = true;
+                        viewport.style.cursor = "grabbing";
+                        startX = e.pageX - viewport.offsetLeft;
+                        scrollLeft = viewport.scrollLeft;
+                    });
+                    viewport.addEventListener('mouseleave', () => { isDown = false; viewport.style.cursor = "grab"; });
+                    viewport.addEventListener('mouseup', () => { isDown = false; viewport.style.cursor = "grab"; });
+                    viewport.addEventListener('mousemove', (e) => {
+                        if (!isDown) return;
+                        e.preventDefault();
+                        const x = e.pageX - viewport.offsetLeft;
+                        const walk = (x - startX) * 2;
+                        viewport.scrollLeft = scrollLeft - walk;
+                    });
+                }
+
+                // 모바일 터치 드래그 보강 (일부 브라우저에서 overflow-x: auto가 작동 안 할 때 대비)
+                let ts;
+                viewport.addEventListener('touchstart', (e) => {
+                    ts = e.touches[0].clientX;
+                }, { passive: true });
+
+                viewport.addEventListener('touchmove', (e) => {
+                    if (!ts) return;
+                    let te = e.touches[0].clientX;
+                    let move = ts - te;
+                    viewport.scrollLeft += move * 1.5; // 민감도 조절
+                    ts = te;
+                }, { passive: true });
+            }
+            window.zoomChart = function (dir) {
+                const activeId = document.querySelector('.chart-type-tab:not(.border-transparent)').dataset.chart + 'Chart';
+                const chart = charts[activeId];
+                if (chart) {
+                    if (dir === 'in') chart.zoom(1.05); // 1.1 -> 1.05로 감도 완화
+                    else chart.zoom(0.95); // 0.9 -> 0.95로 감도 완화
+                }
+            };
+
+            window.resetZoom = function () {
+                const activeId = document.querySelector('.chart-type-tab:not(.border-transparent)').dataset.chart + 'Chart';
+                const chart = charts[activeId];
+                if (chart) chart.resetZoom();
+            };
+
+            window.switchChartType = function (type) {
+                // 1. Update Tabs 
+                document.querySelectorAll('.chart-type-tab').forEach(tab => {
+                    if (tab.dataset.chart === type) {
+                        tab.classList.remove('border-transparent');
+                        tab.style.color = 'var(--text-primary)';
+
+                        if (type === 'exchange') tab.style.borderColor = '#02A6C8';
+                        if (type === 'vix') tab.style.borderColor = '#ef4444';
+                        if (type === 'dxy') tab.style.borderColor = '#10b981';
+                        if (type === 'tnx') tab.style.borderColor = '#f97316';
+                        if (type === 'wti') tab.style.borderColor = '#eab308';
+                    } else {
+                        tab.classList.add('border-transparent');
+                        tab.style.color = 'var(--text-muted)';
+                        tab.style.borderColor = 'transparent';
+                    }
+                });
+
+                // 2. Hide all cards, show selected
+                document.getElementById('card-exchange').classList.add('hidden');
+                document.getElementById('card-vix').classList.add('hidden');
+                document.getElementById('card-dxy').classList.add('hidden');
+                document.getElementById('card-tnx').classList.add('hidden');
+                document.getElementById('card-wti').classList.add('hidden');
+
+                document.getElementById('card-' + type).classList.remove('hidden');
+
+                // 3. Force chart resize & **가장 최신 데이터(오른쪽 끝)**로 자동 스크롤
+                const targetChart = charts[type + 'Chart'];
+                if (targetChart) {
+                    targetChart.resize();
+
+                    // 탭 전환 시에도 오른쪽 끝으로 스크롤 이동
+                    const card = document.getElementById('card-' + type);
+                    const viewport = card.querySelector('.chart-view-viewport');
+                    if (viewport) {
+                        setTimeout(() => {
+                            viewport.scrollLeft = viewport.scrollWidth - viewport.clientWidth;
+                        }, 50); // 아주 짧은 지연시간으로 즉각적인 느낌 제공
+                    }
+                }
+            };
+        </script>
+        <style>
+            .animate-fade-in {
+                animation: fadeIn 0.8s ease-out forwards;
+            }
+
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        </style>
+    </th:block>
+
+</div>

@@ -1,0 +1,117 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}">
+
+  <head>
+    <title>시장 브리핑 | STOCK LAB</title>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  </head>
+
+  <span layout:fragment="page-title">Market Overview</span>
+
+  <div layout:fragment="content">
+    <div class="p-4 md:p-6 space-y-6">
+      <div class="bg-[#0f172a] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+        <div class="px-6 py-4 border-b border-slate-800 bg-gradient-to-r from-slate-900 to-slate-800/50 flex justify-between items-center">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            <h3 class="text-xs font-black text-indigo-400 uppercase tracking-[0.2em]">S&P 500 Stock Heatmap</h3>
+          </div>
+          <span class="text-[10px] text-slate-500 font-mono">Market Performance (Daily)</span>
+        </div>
+        <div id="sp500_heatmap_container" class="h-[500px] w-full"></div>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+        <div class="xl:col-span-4 bg-[#0f172a]/80 backdrop-blur-sm border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col h-[380px]">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wider">
+              <span class="w-2 h-2 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]"></span>
+              Fear & Greed Index
+            </h3>
+          </div>
+          <div class="flex-1 flex justify-center items-center bg-black/20 rounded-2xl overflow-hidden border border-slate-800/50 relative group">
+            <img src="https://alternative.me/crypto/fear-and-greed-index.png" alt="Fear and Greed Index"
+              class="max-w-full max-h-[260px] object-contain transition-transform duration-500 group-hover:scale-105" />
+          </div>
+        </div>
+
+        <div class="xl:col-span-8 bg-[#0f172a]/80 backdrop-blur-sm border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col h-[380px]">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-sm font-bold text-slate-400 flex items-center gap-2 uppercase tracking-wider">
+              <span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
+              Volatility (VIX) - 5M Real-time
+            </h3>
+          </div>
+          <div id="vix_chart_final" class="flex-1 w-full rounded-2xl overflow-hidden border border-slate-800/50 bg-black/10"></div>
+        </div>
+      </div>
+
+      <div class="bg-[#0f172a] border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+        <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-gradient-to-r from-slate-900 to-slate-800/50">
+          <div class="flex items-center gap-4">
+            <h3 class="text-sm font-black text-blue-500 uppercase tracking-[0.2em]">Dual Terminal Analysis</h3>
+            <div class="h-4 w-[1px] bg-slate-700"></div>
+            <div class="flex gap-2 text-[10px] font-bold">
+              <span class="text-slate-400 uppercase">Left: <span th:text="${selectedSymbol}" class="text-blue-400">AAPL</span></span>
+              <span class="text-slate-600 mx-1">|</span>
+              <span class="text-slate-400 uppercase">Right: <span class="text-emerald-400">S&P 500 (SPY)</span></span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 h-[600px] w-full bg-black/5 divide-y lg:divide-y-0 lg:divide-x divide-slate-800">
+          <div id="tradingview_chart_main" class="h-full w-full"></div>
+          <div id="tradingview_chart_spx" class="h-full w-full"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <script th:inline="javascript">
+      function initDashboardCharts() {
+        if (typeof TradingView === 'undefined') return;
+
+        // 2. S&P 500 히트맵 (Full Width)
+        const hmContainer = document.getElementById('sp500_heatmap_container');
+        const hmScript = document.createElement('script');
+        hmScript.src = "https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js";
+        hmScript.async = true;
+        hmScript.innerHTML = JSON.stringify({
+          "index": "SPX", "hasSymbolTooltip": true, "isTransparent": true,
+          "colorTheme": "dark", "locale": "kr", "width": "100%", "height": "100%"
+        });
+        hmContainer.appendChild(hmScript);
+
+        // 3. VIX 차트 (5분봉)
+        new TradingView.widget({
+          "autosize": true, "symbol": "VIX", "interval": "5", "theme": "dark", "style": "1", "locale": "kr",
+          "hide_top_toolbar": true, "hide_legend": true, "container_id": "vix_chart_final",
+          "backgroundColor": "#0f172a", "timezone": "Asia/Seoul"
+        });
+
+        // 4. 듀얼 터미널 (5분봉)
+        const commonConfig = {
+          "autosize": true, "interval": "5", "theme": "dark", "style": "1", "locale": "kr",
+          "toolbar_bg": "#0f172a", "hide_top_toolbar": false, "withdateranges": true,
+          "hide_side_toolbar": false, "allow_symbol_change": true, "backgroundColor": "#0f172a", "timezone": "Asia/Seoul"
+        };
+        new TradingView.widget({ ...commonConfig, "symbol": /*[[${selectedSymbol}]]*/ 'AAPL', "container_id": "tradingview_chart_main" });
+        new TradingView.widget({ ...commonConfig, "symbol": "SPY", "container_id": "tradingview_chart_spx" });
+
+        // 5. 경제 캘린더
+        const calContainer = document.getElementById('calendar_container');
+        const calScript = document.createElement('script');
+        calScript.src = "https://s3.tradingview.com/external-embedding/embed-widget-events.js";
+        calScript.async = true;
+        calScript.innerHTML = JSON.stringify({
+          "width": "100%", "height": "100%", "colorTheme": "dark",
+          "isTransparent": true, "locale": "kr", "importanceFilter": "-1,0,1"
+        });
+        calContainer.appendChild(calScript);
+      }
+
+      window.addEventListener('load', () => {
+        setTimeout(initDashboardCharts, 300);
+      });
+    </script>
+  </div>
+</div>

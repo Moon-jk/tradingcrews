@@ -1,0 +1,384 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+  layout:decorate="~{layout}">
+
+  <head>
+    <title>랭킹 | STOCK LAB</title>
+    <link rel="stylesheet" th:href="@{/css/board.css}" />
+    <style>
+      .board-page {
+        padding: 0;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .top-header {
+        padding: 1.25rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .top-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 800;
+      }
+
+      .header-actions {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .market-tab {
+        display: flex;
+        background: var(--bg-surface);
+        border-bottom: 1px solid var(--border-base);
+      }
+
+      .market-btn {
+        flex: 1;
+        text-align: center;
+        padding: 0.75rem 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-decoration: none;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        white-space: nowrap;
+      }
+
+      .market-btn.active {
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--text-primary);
+      }
+
+      .up {
+        color: #22c55e !important;
+      }
+
+      .down {
+        color: #ef4444 !important;
+      }
+
+      /* 시장 배지 */
+      .badge {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .badge-us {
+        background: rgba(59, 130, 246, .12);
+        color: #3b82f6;
+      }
+
+      .badge-kr {
+        background: rgba(239, 68, 68, .1);
+        color: #ef4444;
+      }
+
+      /* 등급 배지 */
+      .role-badge {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 100px;
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .role-admin {
+        background: rgba(168, 85, 247, .12);
+        color: #a855f7;
+      }
+
+      .role-tier1 {
+        background: rgba(234, 179, 8, .12);
+        color: #ca8a04;
+      }
+
+      .role-tier2 {
+        background: rgba(148, 163, 184, .12);
+        color: #64748b;
+      }
+
+      .role-tier3 {
+        background: rgba(203, 213, 225, .12);
+        color: #94a3b8;
+      }
+
+      @media(min-width: 1024px) {
+        .board-page {
+          max-width: 1440px;
+          margin: 0 auto;
+          padding: 2rem 1rem;
+        }
+
+        .pc-header-wrap {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          margin-bottom: 2rem;
+        }
+
+        .top-header {
+          padding: 0;
+        }
+
+        .top-header h2 {
+          font-size: 1.5rem;
+        }
+
+        .market-tab {
+          border-bottom: none;
+          background: transparent;
+          gap: 0.5rem;
+          margin-bottom: 0;
+        }
+
+        .market-btn {
+          padding: 0.6rem 1.5rem;
+          border-radius: 2rem;
+          background: var(--bg-surface-2);
+          border: 1px solid var(--border-base);
+          width: auto;
+        }
+
+        .market-btn.active {
+          background: var(--text-primary);
+          color: var(--bg-surface);
+          border-color: var(--text-primary);
+        }
+      }
+
+      /* 아코디언 리스트 스타일 (랭킹용) */
+      .ranking-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .ranking-item {
+        background: var(--bg-surface-2);
+        border: 1px solid var(--border-base);
+        border-radius: 1rem;
+        overflow: hidden;
+        transition: border-color 0.2s;
+      }
+
+      .ranking-item[open] {
+        border-color: var(--text-muted);
+      }
+
+      .ranking-summary {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.3rem 1.25rem;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+        transition: background 0.15s;
+        min-height: 64px;
+      }
+
+      .ranking-summary:hover {
+        background: var(--bg-surface);
+      }
+
+      .ranking-summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .summary-left {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .rank-circle {
+        width: 28px;
+        height: 28px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 800;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-base);
+      }
+
+      .title-wrap {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .title-wrap .name {
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .title-wrap .sub {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+        display: flex;
+        gap: 0.2rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .summary-right {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+      }
+
+      .summary-right .rate {
+        font-size: 13.5px;
+        font-weight: 800;
+      }
+
+      .summary-right .icon {
+        color: var(--text-muted);
+        transition: transform 0.2s;
+      }
+
+      .ranking-item[open] .summary-right .icon {
+        transform: rotate(180deg);
+        color: var(--text-primary);
+      }
+
+      .ranking-detail {
+        padding: 0.5rem;
+        border-top: 1px dashed var(--border-base);
+        background: var(--bg-surface);
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+        font-size: 13px;
+      }
+
+      @media(min-width: 640px) {
+        .ranking-detail {
+          grid-template-columns: 1fr 1fr;
+          gap: 0.75rem;
+        }
+      }
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background: var(--bg-surface-2);
+        border-radius: 0.5rem;
+      }
+
+      .detail-row .label {
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      .detail-row .val {
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+    </style>
+  </head>
+  <span layout:fragment="page-title" style="display:none;">Ranking</span>
+
+  <div layout:fragment="content">
+    <div class="board-page">
+
+      <div class="pc-header-wrap">
+        <div class="top-header">
+          <h2>🏆 수익률 랭킹</h2>
+          <div class="header-actions">
+            <a href="/trading" class="btn btn-ghost" style="padding:0.4rem 0.8rem; font-size:12px;">← 대시보드</a>
+          </div>
+        </div>
+        <div class="market-tab">
+          <a href="/trading/ranking?type=COMBINED" class="market-btn"
+            th:classappend="${rankingType=='COMBINED'} ? ' active'">🌐 통합</a>
+          <a href="/trading/ranking?type=US" class="market-btn"
+            th:classappend="${rankingType=='US'}       ? ' active'">🇺🇸 미국</a>
+          <a href="/trading/ranking?type=KR" class="market-btn"
+            th:classappend="${rankingType=='KR'}       ? ' active'">🇰🇷 한국</a>
+        </div>
+      </div>
+
+      <div style="padding: 1rem; max-width: 1000px; width: 100%; margin: 0 auto;">
+        <div th:if="${rankingType=='COMBINED'}" style="padding:.65rem 1rem; border-radius:.75rem; background:var(--bg-surface-2);
+              border:1px solid var(--border-base); font-size:11px; color:var(--text-muted); margin-bottom:1rem;">
+          📌 통합 랭킹은 미국·한국 계좌 총자산을 <strong>KRW 기준으로 환산</strong>한 수익률(%)로 순위를 결정합니다.
+          <span th:text="'현재 환율: 1 USD = ₩' + ${#numbers.formatDecimal(usdToKrw,1,'COMMA',2,'POINT')}"></span>
+        </div>
+
+        <div class="ranking-list">
+          <details th:each="e : ${ranking}" class="ranking-item">
+            <summary class="ranking-summary">
+              <div class="summary-left">
+                <div class="rank-circle"
+                  th:text="${e.rank() == 1 ? '🥇' : (e.rank() == 2 ? '🥈' : (e.rank() == 3 ? '🥉' : e.rank()))}">1</div>
+                <div class="title-wrap">
+                  <div class="name" th:text="${e.nickname()}">닉네임</div>
+                  <div class="sub">
+                    <span th:if="${e.memberRole().name()=='ADMIN'}" class="role-badge role-admin">👑 관리자</span>
+                    <span th:if="${e.memberRole().name()=='TIER1'}" class="role-badge role-tier1">🥇 1등급</span>
+                    <span th:if="${e.memberRole().name()=='TIER2'}" class="role-badge role-tier2">🥈 2등급</span>
+                    <span th:if="${e.memberRole().name()=='TIER3'}" class="role-badge role-tier3">🥉 3등급</span>
+                  </div>
+                </div>
+              </div>
+              <div class="summary-right">
+                <div class="rate" th:classappend="${e.profitRate() >= 0} ? 'up' : 'down'"
+                  th:text="${e.profitRate() >= 0 ? '+' : ''} + ${#numbers.formatDecimal(e.profitRate(),1,'COMMA',2,'POINT')} + '%'">
+                  0%
+                </div>
+                <svg class="icon" style="width:16px; height:16px;" fill="none" stroke="currentColor"
+                  viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </div>
+            </summary>
+
+            <div class="ranking-detail">
+              <div class="detail-row">
+                <span class="label">총 자산</span>
+                <span class="val"
+                  th:text="${e.currencySymbol()} + ${#numbers.formatDecimal(e.totalAsset(),1,'COMMA',2,'POINT')}">$0</span>
+              </div>
+              <div class="detail-row" th:if="${rankingType=='COMBINED'}">
+                <span class="label">KRW 환산 자산</span>
+                <span class="val"
+                  th:text="'₩' + ${#numbers.formatDecimal(e.krwTotalAsset(),1,'COMMA',0,'POINT')}">₩0</span>
+              </div>
+            </div>
+          </details>
+
+          <!-- Empty State -->
+          <div th:if="${#lists.isEmpty(ranking)}"
+            style="text-align:center; padding:4rem 1rem; color:var(--text-muted); background:var(--bg-surface-2); border-radius:1rem; border:1px solid var(--border-base);">
+            <span style="font-size:3rem; display:block; margin-bottom:1rem; opacity:0.5;">🏆</span>
+            <div style="font-size:15px; font-weight:600;">아직 참여자가 없습니다.</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>

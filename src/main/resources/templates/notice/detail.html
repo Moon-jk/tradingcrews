@@ -1,0 +1,138 @@
+<div xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout}">
+
+    <head>
+        <title th:text="${notice.title} + ' | 공지사항'"></title>
+    </head>
+    <span layout:fragment="page-title">Notice Detail</span>
+
+    <div layout:fragment="content" class="p-4 md:p-8 space-y-6 max-w-[1440px] mx-auto min-h-screen">
+        <div class="rounded-3xl p-5 md:p-10 border shadow-2xl min-h-[700px] flex flex-col bg-white dark:bg-navy-900 border-slate-200 dark:border-white/5 transition-colors duration-300">
+
+            <!-- Top Action Bar -->
+            <div class="mb-8 flex justify-between items-center">
+                <a href="/notice" class="text-xs font-bold px-4 py-2 rounded-2xl border border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-navy-950 flex items-center gap-2 transition-all group bg-white dark:bg-navy-900">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 transition-transform group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
+                    <span>Back to List</span>
+                </a>
+            </div>
+
+            <!-- Content Reading Area with Max Width for Readability -->
+            <div class="max-w-4xl mx-auto w-full">
+                
+                <!-- Notice Header -->
+                <div class="border-b border-slate-200 dark:border-white/10 pb-6 mb-8 lg:mb-12 transition-colors duration-300">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <h1 class="text-2xl md:text-4xl font-black tracking-tight leading-snug text-slate-900 dark:text-white transition-colors duration-300 flex-1" th:text="${notice.title}">공지사항 제목</h1>
+                        
+                        <div th:if="${session.loginMember != null and (notice.author == session.loginMember.nickname or session.loginMember.role.name() == 'ADMIN')}" class="flex gap-2 shrink-0">
+                            <a th:href="@{|/notice/edit/${notice.id}|}" class="text-[11px] font-bold px-4 py-2 text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-navy-950 hover:bg-slate-200 dark:hover:bg-white/10 rounded-xl transition-all border border-slate-200 dark:border-white/5">Edit</a>
+                            <form th:action="@{|/notice/delete/${notice.id}|}" method="post" onsubmit="return confirm('이 공지사항을 정말 삭제하시겠습니까?');">
+                                <button type="submit" class="text-[11px] font-bold px-4 py-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all border border-red-200 dark:border-red-500/20">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Metadata Info Pills -->
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-[11px] font-bold text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 opacity-70" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                            <span th:text="${notice.author}">관리자</span>
+                        </span>
+                        <span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-[11px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <span th:text="${#temporals.format(notice.createdAt, 'yyyy.MM.dd HH:mm')}">2024-03-20</span>
+                        </span>
+                        <span class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-[11px] font-bold text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 opacity-70" viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" /></svg>
+                            <span th:text="${notice.viewCount}">128</span>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Article Body -->
+                <article class="prose prose-sm md:prose-base dark:prose-invert max-w-none text-slate-800 dark:text-slate-300 leading-loose break-words whitespace-pre-wrap mb-16 transition-colors duration-300"
+                    th:text="${notice.content}">
+                    본문 내용
+                </article>
+
+                <!-- Feedback / Like & Dislike -->
+                <div class="flex flex-col sm:flex-row justify-center items-center gap-4 py-10 border-y border-slate-200 dark:border-white/10 transition-colors duration-300">
+                    <form th:action="@{|/notice/detail/${notice.id}/like|}" method="post" class="w-full sm:w-auto">
+                        <button type="submit"
+                            th:classappend="${session.loginMember != null and notice.likedUsers.contains(session.loginMember.nickname)} ? 'border-electric text-electric bg-electric/10 shadow-[0_0_20px_var(--accent-glow)]' : 'border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-navy-950'"
+                            class="auth-required w-full flex justify-center items-center gap-3 px-8 py-4 rounded-2xl border transition-all duration-300 hover:scale-105 active:scale-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 transition-transform group-hover:-translate-y-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.514" />
+                            </svg>
+                            <span class="font-black text-lg" th:text="${notice.likedUsers.size()}">0</span>
+                        </button>
+                    </form>
+
+                    <form th:action="@{|/notice/detail/${notice.id}/dislike|}" method="post" class="w-full sm:w-auto">
+                        <button type="submit"
+                            th:classappend="${session.loginMember != null and notice.dislikedUsers.contains(session.loginMember.nickname)} ? 'border-red-500 text-red-500 bg-red-500/10 shadow-[0_0_20px_rgba(239,68,68,0.2)]' : 'border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-navy-950'"
+                            class="auth-required w-full flex justify-center items-center gap-3 px-8 py-4 rounded-2xl border transition-all duration-300 hover:scale-105 active:scale-95">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.514" />
+                            </svg>
+                            <span class="font-black text-lg" th:text="${notice.dislikedUsers.size()}">0</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Discussion (Comments) Section -->
+                <div class="mt-12 lg:mt-16">
+                    <h3 class="font-black mb-8 flex items-center gap-3 text-sm uppercase tracking-widest text-slate-900 dark:text-white">
+                        Discussion 
+                        <span class="bg-electric px-3 py-1 rounded-full text-[10px] text-white shadow-md"
+                            th:text="${notice.comments.size()}">0</span>
+                    </h3>
+
+                    <!-- Comments List -->
+                    <div class="space-y-4 mb-10">
+                        <div th:each="comment : ${notice.comments}"
+                            class="p-5 rounded-3xl border transition-all group hover:border-electric/30 bg-slate-50 dark:bg-navy-950/50 border-slate-200 dark:border-white/5 shadow-sm">
+                            <div class="flex justify-between items-start mb-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-electric to-indigo-500 flex items-center justify-center text-xs font-black text-white shadow-lg uppercase"
+                                        th:text="${#strings.substring(comment.author, 0, 1)}">A</div>
+                                    <div>
+                                        <span class="text-xs font-black block text-slate-900 dark:text-white" th:text="${comment.author}">유저닉네임</span>
+                                        <span class="text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 block uppercase tracking-widest"
+                                            th:text="${#temporals.format(comment.createdAt, 'yyyy.MM.dd HH:mm')}">시간</span>
+                                    </div>
+                                </div>
+
+                                <form
+                                    th:if="${session.loginMember != null and (session.loginMember.nickname == comment.author or session.loginMember.role.name() == 'ADMIN')}"
+                                    th:action="@{|/notice/detail/${notice.id}/comment/${comment.id}/delete|}" method="post"
+                                    onsubmit="return confirm('이 댓글을 삭제하시겠습니까?');">
+                                    <button type="submit"
+                                        class="text-red-500 text-[9px] font-black tracking-widest hover:bg-red-50 dark:hover:bg-red-500/10 px-3 py-1.5 rounded-xl transition-all border border-transparent hover:border-red-200 dark:hover:border-red-500/20">DELETE</button>
+                                </form>
+                            </div>
+                            <p class="text-[13px] leading-relaxed ml-[3.5rem] text-slate-700 dark:text-slate-300 whitespace-pre-wrap break-words" th:text="${comment.content}">댓글 내용입니다.</p>
+                        </div>
+                    </div>
+
+                    <!-- Comment Input Form -->
+                    <div class="mt-8 border-t pt-8 border-slate-200 dark:border-white/5">
+                        <form th:action="@{|/notice/detail/${notice.id}/comment|}" method="post" class="relative group">
+                            <div class="absolute left-5 top-5 w-8 h-8 rounded-xl bg-slate-200 dark:bg-white/10 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                            </div>
+                            <textarea name="content" rows="4" required placeholder="Share your perspective on this notice..."
+                                class="auth-required w-full rounded-3xl pl-[4.5rem] pr-6 pt-5 pb-14 text-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-electric/30 transition-all resize-none shadow-inner border bg-slate-50 dark:bg-navy-950 border-slate-200 dark:border-white/10 text-slate-900 dark:text-white leading-relaxed"></textarea>
+                            <button type="submit"
+                                class="auth-required absolute bottom-3 right-3 px-6 py-2.5 rounded-2xl text-white font-black bg-electric hover:bg-electric-600 transition-all text-[11px] uppercase tracking-widest shadow-lg active:scale-95 flex items-center gap-2">
+                                Post Comment
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div> <!-- End Reading Core -->
+        </div>
+    </div>
+</div>
